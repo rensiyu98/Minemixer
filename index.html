@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MineMixer · 混搭工作站</title>
+<style>
+:root{
+  --bg:#0a0e15; --card:#121a28; --card2:#0f1622; --line:#1f2c42; --line2:#2a3a58;
+  --txt:#dce6f5; --txt2:#8ba0bf; --txt3:#5b6d8a; --acc:#57e6a8; --acc2:#59b7ff; --warn:#ff6b7a;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:radial-gradient(1100px 500px at 75% -8%,#111d33 0%,var(--bg) 55%) fixed,var(--bg);color:var(--txt);
+  font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;font-size:14px;line-height:1.5;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#22304a;border-radius:6px}
+button{font-family:inherit}
+.hbtn{background:transparent;border:1px solid var(--line2);color:var(--txt2);padding:7px 14px;border-radius:9px;cursor:pointer;font-size:13px;transition:.15s}
+.hbtn:hover{border-color:var(--acc);color:var(--acc)}
+.hbtn.primary{background:linear-gradient(90deg,#1f8f66,#1f6fb0);border:none;color:#fff;font-weight:600;padding:8px 18px}
+.hbtn.primary:disabled{filter:grayscale(.8) brightness(.6);cursor:not-allowed}
+.hbtn.big{font-size:15px;padding:11px 30px}
+
+/* ============ 主界面 ============ */
+#viewHome{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:40px 20px 60px}
+#viewHome h1{font-size:30px;margin:14px 0 6px}
+#viewHome h1 b{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+#viewHome .sub{color:var(--txt2);font-size:14px;margin-bottom:26px}
+.homebtns{display:flex;gap:12px;margin-bottom:34px;flex-wrap:wrap;justify-content:center}
+.dropzone{border:2px dashed var(--line2);border-radius:16px;padding:30px 60px;text-align:center;color:var(--txt3);margin-bottom:30px;transition:.2s}
+.dropzone.over{border-color:var(--acc);color:var(--acc);background:rgba(87,230,168,.05)}
+#homePacks{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;width:min(1080px,96vw)}
+.hpack{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px}
+.hpack h3{font-size:15px;margin-bottom:3px}
+.hpack .meta{font-size:11.5px;color:var(--txt3);margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lic{padding:0 7px;border-radius:9px;font-size:10.5px;border:1px solid var(--line2)}
+.lic.ok{color:var(--acc);border-color:#2a6b53}
+.hpack .ops{display:flex;gap:8px;margin-top:6px}
+.hpack .ops .hbtn{padding:4px 12px;font-size:12px}
+#onlineLog{max-height:120px;overflow-y:auto;font-size:11.5px;color:var(--txt2);margin-top:14px;width:min(1080px,96vw);display:none}
+#onlineLog.show{display:block}
+
+/* ============ 工作界面 ============ */
+#viewWork{flex:1;display:none;flex-direction:column;min-height:0}
+#viewWork.show{display:flex}
+.topbar{display:flex;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid var(--line);background:rgba(10,14,21,.85);flex:none}
+.topbar .title{font-size:15px}
+.topbar .title b{color:var(--acc)}
+#wsSearch{flex:1;max-width:420px;background:var(--card2);border:1px solid var(--line2);border-radius:10px;color:var(--txt);padding:7px 13px;font-size:13px;outline:none}
+#wsSearch:focus{border-color:var(--acc)}
+select.hbtn{appearance:none}
+.workmain{flex:1;display:grid;grid-template-columns:190px minmax(0,1fr) 320px;gap:12px;padding:12px 14px;min-height:0}
+
+/* 左栏:大类 */
+#rail{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:10px 8px;overflow-y:auto}
+.rcat{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:14px;color:var(--txt2);margin-bottom:2px}
+.rcat:hover{background:rgba(89,183,255,.07)}
+.rcat.active{background:linear-gradient(90deg,rgba(87,230,168,.14),rgba(89,183,255,.10));color:var(--txt)}
+.rcat .n{font-size:11px;color:var(--txt3);font-family:Consolas,monospace}
+.rcat.active .n{color:var(--acc)}
+
+/* 中栏:预览区 */
+#center{display:flex;flex-direction:column;min-height:0}
+#crumb{flex:none;font-size:13px;color:var(--txt2);padding:2px 4px 8px}
+#crumb b{color:var(--acc2);cursor:pointer}
+#crumb b:hover{text-decoration:underline}
+#census{flex:none;font-size:11.5px;color:var(--txt3);padding:0 4px 8px}
+#stage{flex:1;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px;min-height:0}
+/* 小类卡片(套装) */
+.setwall{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start}
+.setcard{width:210px;border:1px solid var(--line);border-radius:13px;background:var(--card2);padding:12px;cursor:grab;transition:.12s}
+.setcard:hover{border-color:var(--acc2);transform:translateY(-2px)}
+.setcard h4{font-size:14.5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setcard .smeta{font-size:11px;color:var(--txt3);margin-bottom:8px}
+.setcard .scount{font-size:11.5px;color:var(--acc);margin-bottom:6px}
+.setthumbs{display:flex;gap:5px}
+.setthumbs .gt{width:40px;height:40px;background:#0c1119 center/contain no-repeat;image-rendering:pixelated;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.setcard .hint{font-size:10.5px;color:var(--txt3);margin-top:8px}
+/* 条目网格 */
+.entrygrid{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
+.ecell{width:104px;border:1px solid var(--line);border-radius:11px;background:var(--card2);padding:8px 4px 6px;cursor:grab;text-align:center;transition:.12s;user-select:none}
+.ecell:hover{border-color:var(--line2)}
+.ecell.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.eth{height:64px;margin-bottom:5px;background:#0c1119 center/contain no-repeat;image-rendering:pixelated;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;position:relative}
+.eth::before{content:'';position:absolute;inset:0;border-radius:8px;background:repeating-conic-gradient(rgba(255,255,255,.04) 0% 25%,transparent 0% 50%) 0 0/16px 16px;pointer-events:none}
+.ecell.sel .eth::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--acc);text-shadow:0 0 10px rgba(87,230,168,.7);background:rgba(5,10,16,.35);border-radius:8px}
+.elb{font-size:11px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+.epk{font-size:9.5px;color:var(--txt3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.loadmore{margin:14px auto;display:block}
+.empty{padding:40px 20px;text-align:center;color:var(--txt3);font-size:13px;line-height:2}
+
+/* 右栏:工作台 */
+#wsRight{background:var(--card);border:1px solid var(--line);border-radius:13px;display:flex;flex-direction:column;min-height:0;outline:none}
+#wsRight.dragover{outline:2px dashed var(--acc);outline-offset:-4px}
+#wsRight .phead{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--line);flex:none}
+#wsRight .phead h2{font-size:14px}
+#wsRight .phead .cnt{font-size:11.5px;color:var(--txt3);margin-left:auto}
+#wbList{flex:1;overflow-y:auto;padding:8px;min-height:0}
+.wbgrp{margin-bottom:10px}
+.wbgh{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--acc2);padding:4px 6px;border-bottom:1px dashed var(--line)}
+.wbgh .allrm{margin-left:auto;border:none;background:transparent;color:var(--txt3);cursor:pointer;font-size:11px}
+.wbgh .allrm:hover{color:var(--warn)}
+.wbrow{display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:8px;font-size:12.5px;cursor:pointer}
+.wbrow:hover{background:rgba(89,183,255,.07)}
+.wbtag{flex:none;font-size:10px;padding:1px 7px;border-radius:9px;border:1px solid var(--line2);color:var(--txt2)}
+.wbn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wbrow .del{border:none;background:transparent;color:var(--txt3);cursor:pointer;font-size:14px}
+.wbrow .del:hover{color:var(--warn)}
+.wbfoot{padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:8px;flex:none}
+
+/* 详情弹窗 */
+.overlay{position:fixed;inset:0;background:rgba(5,8,13,.75);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+#detailBody{background:var(--card);border:1px solid var(--line2);border-radius:15px;padding:20px;width:min(720px,94vw);max-height:88vh;overflow-y:auto}
+.dmain{display:flex;gap:18px}
+.dimg{width:220px;height:220px;flex:none;border-radius:12px;background:repeating-conic-gradient(rgba(255,255,255,.05) 0% 25%,transparent 0% 50%) 0 0/24px 24px,#0c1119;display:flex;align-items:center;justify-content:center}
+.dimg img{max-width:100%;max-height:100%;image-rendering:pixelated}
+.dnoimg{font-size:11px;color:var(--txt3);text-align:center;padding:10px;word-break:break-all}
+.dinfo{flex:1;min-width:0}
+.dinfo h3{font-size:17px;margin-bottom:6px}
+.dpath{font-size:11px;color:var(--txt3);word-break:break-all;background:var(--bg);padding:6px 9px;border-radius:8px;margin-bottom:9px;font-family:Consolas,monospace}
+.dinfo p{font-size:12.5px;color:var(--txt2);margin:3px 0}
+.ddep{color:#ffcf6b!important}
+.dab{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.dab h4{font-size:13px;margin-bottom:9px;color:var(--txt2)}
+.ablist{display:flex;gap:10px;flex-wrap:wrap}
+.abcard{width:120px;border:1px solid var(--line);border-radius:11px;padding:8px;text-align:center;background:var(--card2)}
+.abcard.cur{border-color:var(--acc)}
+.abth{height:84px;background:#0c1119 center/contain no-repeat;image-rendering:pixelated;border-radius:8px;margin-bottom:6px}
+.abname{font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ablic{font-size:10px;color:var(--txt3);margin:2px 0 6px}
+.abuse{width:100%;border:1px solid var(--line2);background:transparent;color:var(--txt2);border-radius:7px;padding:3px;cursor:pointer;font-size:11.5px}
+.abuse:hover{border-color:var(--acc);color:var(--acc)}
+.dim{color:var(--txt3);font-size:12px}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(18px);background:#0e1a2e;border:1px solid var(--acc);
+  color:var(--txt);padding:10px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:300;max-width:80vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{border-color:var(--warn)}
+#dbg{position:fixed;bottom:2px;left:50%;transform:translateX(-50%);z-index:999;background:#0a0f1acc;color:#8fe;padding:2px 14px;border-radius:8px 8px 0 0;font:11px Consolas,monospace;max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<!-- ================= 主界面 ================= -->
+<div id="viewHome">
+  <div style="font-size:40px">⛏️</div>
+  <h1>Mine<b>Mixer</b> 混搭工作站</h1>
+  <div class="sub">把资源包拆开,跨包混搭属于你的整合包 —— 所有数据仅存本机</div>
+  <div class="homebtns">
+    <button class="hbtn big" id="btnLocal">📂 导入本地 zip</button>
+    <button class="hbtn big" id="btnOnline">☁ 在线导入精选开放许可证包</button>
+    <button class="hbtn big primary" id="btnGoWork">🛠 进入工作台 →</button>
+    <button class="hbtn big" id="btnResetDb" title="清空本机数据库并重新在线导入,用于数据错位急救">🧹 重置数据库</button>
+    <button class="hbtn big" id="btnSubmit" title="把自己的材质包清洗后投稿到云端包库">📤 投稿到云端包库</button>
+    <input type="file" id="fileInput" accept=".zip" multiple style="display:none">
+  </div>
+  <div class="dropzone" id="dropzone">把 .zip 资源包拖到这里(可多选) · 或点上方按钮</div>
+  <div id="homePacks"></div>
+  <div style="width:min(1080px,96vw);margin-top:34px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <h2 style="font-size:18px">🌐 云端包库</h2>
+      <span style="font-size:12px;color:var(--txt3)">托管于开放的包库清单——任何人都能扩充(编辑 cloud-library.js 或提交 PR)</span>
+      <input id="cloudSearch" placeholder="🔍 过滤" style="margin-left:auto;background:var(--card2);border:1px solid var(--line2);border-radius:8px;color:var(--txt);padding:5px 10px;font-size:12px;outline:none;width:180px">
+    </div>
+    <div id="cloudList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px"></div>
+    <div style="text-align:center;margin-top:10px"><button class="hbtn" id="cloudMore" style="display:none">加载更多</button></div>
+  </div>
+  <div id="onlineLog"></div>
+  <div style="margin-top:22px"><button class="hbtn" id="btnRebuild">🔄 按最新引擎重建全部索引</button></div>
+</div>
+
+<!-- ================= 工作界面 ================= -->
+<div id="viewWork">
+  <div class="topbar">
+    <button class="hbtn" id="btnGoHome">← 主界面</button>
+    <div class="title">Mine<b>Mixer</b> 工作台</div>
+    <span style="flex:1"></span>
+    <input id="wsSearch" placeholder="🔍 搜索条目:钻石 / diamond / 树叶(跨所有包)">
+    <select id="verSel2" class="hbtn" title="导出目标版本(同时写入 supported_formats 区间)">
+      <option value="4">1.13–1.14</option>
+      <option value="5">1.15–1.16.1</option>
+      <option value="6">1.16.2–1.16.5</option>
+      <option value="7">1.17</option>
+      <option value="8">1.18</option>
+      <option value="9">1.19–1.19.2</option>
+      <option value="12">1.19.3</option>
+      <option value="13">1.19.4</option>
+      <option value="15" selected>1.20–1.20.1</option>
+      <option value="18">1.20.2</option>
+      <option value="22">1.20.3–1.20.4</option>
+      <option value="32">1.20.5–1.20.6</option>
+      <option value="34">1.21–1.21.1</option>
+      <option value="42">1.21.2–1.21.3</option>
+      <option value="46">1.21.4</option>
+      <option value="55">1.21.5</option>
+      <option value="63">1.21.6</option>
+      <option value="64">1.21.7–1.21.8</option>
+      <option value="69">1.21.9</option>
+      <option value="75">1.21.11</option>
+      <option value="84">26.1</option>
+      <option value="88">26.2</option>
+      <option value="97">26.3</option>
+    </select>
+    <button class="hbtn primary" id="btnPack2">⛏ 生成混搭包</button>
+  </div>
+  <div class="workmain">
+    <div id="rail"></div>
+    <div id="center">
+      <div id="crumb"></div>
+      <div id="census"></div>
+      <div id="stage"></div>
+    </div>
+    <div id="wsRight" tabindex="0">
+      <div class="phead"><h2>🧰 工作台</h2><span class="cnt"><span id="wbCount">0</span> 项</span></div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--line);flex:none">
+        <div style="font-size:11px;color:var(--txt3);margin-bottom:4px">基底包(未选材质由它垫底,防缺失)</div>
+        <select id="baseSel" class="hbtn" style="width:100%;font-size:12px"></select>
+      </div>
+      <div id="wbList"></div>
+      <div class="wbfoot">
+        <button class="hbtn" id="btnClear2">清空</button>
+        <button class="hbtn primary" id="btnPack2b" style="flex:1">⛏ 生成混搭包</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="detailOv"><div id="detailBody"></div></div>
+<div id="toast"></div>
+<div id="dbg"></div>
+
+<script src="js/lib/pako_inflate.min.js"></script>
+<script src="js/zip.js"></script>
+<script src="js/lang_zh.js"></script>
+<script src="js/categorize.js"></script>
+<script src="js/vanilla_manifest.js"></script>
+<script src="js/checker.js"></script>
+<script src="js/cloud-library.js"></script>
+<script src="js/store.js"></script>
+<script src="js/library.js"></script>
+<script src="js/workbench.js"></script>
+<script>
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+function toast(msg, err){const t=$('#toast');t.textContent=msg;t.className='show'+(err?' err':'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='',3000);}
+function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
+
+(async function boot(){
+  await DB.open();
+  // ---- 视图切换 ----
+  const goHome = () => { $('#viewWork').classList.remove('show'); $('#viewHome').style.display=''; };
+  const goWork = () => { $('#viewHome').style.display='none'; $('#viewWork').classList.add('show'); initWsDrop(); renderRail(); renderCenter(); renderWorkbench(); };
+  $('#btnGoWork').onclick = goWork;
+  $('#btnGoHome').onclick = goHome;
+  // ---- 导入 ----
+  $('#btnLocal').onclick = () => $('#fileInput').click();
+  $('#fileInput').onchange = e => { importLocalFiles([...e.target.files]); e.target.value=''; };
+  addEventListener('dragover', e => e.preventDefault());
+  addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files.length) { importLocalFiles([...e.dataTransfer.files]); goHome(); } });
+  const runOnline = async () => {
+    const log = $('#onlineLog'); log.classList.add('show'); log.innerHTML='';
+    $('#btnOnline').disabled = true;
+    await importCurated(m => { const d=document.createElement('div'); d.textContent=m; log.appendChild(d); log.scrollTop=log.scrollHeight; });
+    $('#btnOnline').disabled = false;
+    await reloadPacks();
+  };
+  $('#btnOnline').onclick = runOnline;
+  // ---- 云端包库(分页+过滤,不堆一屏) ----
+  const CLOUD = { shown: 24, q: '' };
+  window.renderCloud = function () {
+    const box = $('#cloudList'); if (!box) return;
+    const imported = new Set(STATE.packs.map(p => (p.source === 'modrinth' && p.author) ? p.author.replace('Modrinth:', '') : p.name.toLowerCase()));
+    const q = CLOUD.q.toLowerCase();
+    const list = CLOUD_LIBRARY.filter(c => !q || c.name.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q)) || c.slug.includes(q));
+    box.innerHTML = '';
+    for (const c of list.slice(0, CLOUD.shown)) {
+      const done = imported.has(c.slug) || imported.has(c.name.toLowerCase());
+      const el = document.createElement('div'); el.className = 'hpack';
+      el.innerHTML = `<h3>${c.name}</h3>
+        <div class="meta"><span class="lic ok">${c.lic.slice(0, 18)}</span>${(c.tags || []).map(t => `<span>#${t}</span>`).join('')}</div>
+        <div class="ops"><button class="hbtn ci" ${done ? 'disabled' : ''}>${done ? '✓ 已入库' : '⬇ 导入'}</button></div>`;
+      if (!done) el.querySelector('.ci').onclick = async () => {
+        const btn = el.querySelector('.ci'); btn.disabled = true; btn.textContent = '⬇ 中…';
+        try {
+          const vj = await (await fetch(`https://api.modrinth.com/v2/project/${c.slug}/version`)).json();
+          const file = (vj[0] && vj[0].files && (vj[0].files.find(f => f.primary) || vj[0].files[0]));
+          if (!file) throw new Error('无版本文件');
+          const buf = await (await fetch(file.url)).arrayBuffer();
+          const pk = await importZipBuffer(buf, { name: c.name, license: c.lic, source: 'modrinth', author: 'Modrinth:' + c.slug });
+          btn.textContent = '✓ 已入库';
+          autoCheck(pk);
+        } catch (e) { btn.disabled = false; btn.textContent = '⬇ 导入'; toast(`✕ ${c.name}: ${e.message}`, true); }
+      };
+      box.appendChild(el);
+    }
+    const more = $('#cloudMore');
+    more.style.display = list.length > CLOUD.shown ? '' : 'none';
+    more.textContent = `加载更多(共 ${list.length} 个)`;
+    more.onclick = () => { CLOUD.shown += 24; renderCloud(); };
+  };
+  $('#cloudSearch').oninput = e => { CLOUD.q = e.target.value; CLOUD.shown = 24; renderCloud(); };
+  // ---- 📤 投稿到云端包库:清洗(只留原版)→ 下载投稿包 → 生成条目代码与三步向导 ----
+  const subInput = document.createElement('input');
+  subInput.type = 'file'; subInput.accept = '.zip'; subInput.style.display = 'none';
+  document.body.appendChild(subInput);
+  $('#btnSubmit').onclick = () => subInput.click();
+  subInput.onchange = async () => {
+    const f = subInput.files[0]; subInput.value = ''; if (!f) return;
+    try { await prepareSubmission(f); } catch (e) { toast('投稿准备失败: ' + e.message, true); }
+  };
+  async function prepareSubmission(file) {
+    toast('📤 正在分析并清洗 ' + file.name + ' …');
+    const buf = await file.arrayBuffer();
+    const ents = await ZR.entries(buf);
+    const { entries, modInfo } = buildEntries(ents);
+    if (!entries.length) throw new Error('包内没有原版材质内容,无法投稿');
+    const keep = new Set(['pack.mcmeta', 'pack.png']);
+    for (const e of entries) for (const ff of e.files) keep.add(ff.name);
+    const outFiles = [];
+    for (const z of ents) if (keep.has(z.name)) outFiles.push({ name: z.name, data: ZR.read(buf, z) });
+    const base = file.name.replace(/\.zip$/i, '');
+    if (!outFiles.some(x => x.name === 'pack.mcmeta')) {
+      outFiles.unshift({ name: 'pack.mcmeta', data: new TextEncoder().encode(JSON.stringify({ pack: { pack_format: 15, supported_formats: { min_inclusive: 15, max_inclusive: 999 }, description: base + ' · MineMixer cloud' } }, null, 2)) });
+    }
+    const slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'my-pack';
+    const entryCode = `  { slug: '${slug}', name: '${base}', lic: 'CC0-1.0', url: 'https://你的存储直链/${slug}.zip', tags: [] },`;
+    const blob = zipStore(outFiles);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = slug + '.zip'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 800);
+    let ov = $('#submitOv');
+    if (!ov) {
+      ov = document.createElement('div'); ov.id = 'submitOv'; ov.className = 'overlay';
+      ov.innerHTML = '<div style="background:var(--card);border:1px solid var(--line2);border-radius:15px;padding:22px;width:min(680px,94vw);max-height:88vh;overflow-y:auto" id="submitBody"></div>';
+      document.body.appendChild(ov);
+      ov.onclick = e => { if (e.target === ov) ov.classList.remove('show'); };
+    }
+    const modSum = modInfo.modNs.length ? `已过滤 mod 资源 ${modInfo.modNs.reduce((s, m) => s + m.count, 0)} 个(${modInfo.modNs.slice(0, 3).map(m => m.ns).join('、')}…)` : '无 mod 资源,全量保留';
+    $('#submitBody').innerHTML = `
+      <h3>📤 投稿准备完成</h3>
+      <p style="color:var(--txt2);font-size:13px;margin:10px 0">✅ <b>清洗包已下载:${slug}.zip</b>(原版条目 ${entries.length} 个 · ${modSum})<br>它只含 assets/minecraft 原版内容,可直接公开托管。</p>
+      <p style="font-size:13px;color:var(--txt2);margin:14px 0 6px"><b>① 上传清洗包到对象存储(推荐 Cloudflare R2,零流量费)</b><br>R2 控制台 → 创建 bucket → 上传 ${slug}.zip → 开启公开访问 → 复制直链,替换下面代码里的 url:</p>
+      <pre style="background:var(--bg);padding:10px;border-radius:8px;font-size:11.5px;overflow-x:auto;user-select:all">${entryCode}</pre>
+      <p style="font-size:13px;color:var(--txt2);margin:14px 0 6px"><b>② 加入云端包库清单</b><br>打开 js/cloud-library.js,把上面这行粘进数组(可改 name / lic / tags)。</p>
+      <p style="font-size:13px;color:var(--txt2);margin:14px 0 6px"><b>③ 提交(GitHub 上编辑该文件会自动生成 PR)</b><br>合并后,全站用户在「🌐 云端包库」即可看到并一键导入你的包。</p>
+      <div style="display:flex;gap:10px;margin-top:16px"><button class="hbtn primary" id="copyEntry">📋 复制条目代码</button><button class="hbtn" id="closeSub">关闭</button></div>`;
+    $('#copyEntry').onclick = () => navigator.clipboard.writeText(entryCode).then(() => toast('✓ 条目代码已复制')).catch(() => toast('复制失败,请手动选中复制', true));
+    $('#closeSub').onclick = () => ov.classList.remove('show');
+    ov.classList.add('show');
+  }
+  // 重置后自动播种
+  if (localStorage.getItem('mm2_autoseed') === '1') {
+    localStorage.removeItem('mm2_autoseed');
+    setTimeout(() => runOnline(), 400);
+  }
+  $('#btnResetDb').onclick = async () => {
+    if (!confirm('重置将清空本机所有已导入的包与选择,然后自动重新在线导入 10 个精选包。继续?')) return;
+    $('#btnResetDb').disabled = true;
+    localStorage.setItem('mm2_autoseed', '1');
+    DB.db.close();
+    await new Promise(ok => { const rq = indexedDB.deleteDatabase('minemixer_v2'); rq.onsuccess = rq.onerror = rq.onblocked = () => ok(); });
+    location.reload();
+  };
+  // ---- 重建(引擎升级时自动触发,也可手动) ----
+  async function rebuildAll() {
+    const packs = await DB.packs();
+    const dropped = [];
+    for (const p of packs) {
+      const zip = await DB.packZip(p.id); if (!zip) continue;
+      const { entries, modInfo } = buildEntries(await ZR.entries(zip));
+      await DB.delPack(p.id);
+      STATE.zipCache.delete(p.id);
+      if (!entries.length) { dropped.push(p.name); continue; }   // 纯 mod/整合包资源 → 移出库
+      await DB.putPack({ ...p, zip: undefined, engineVersion: ENGINE_V, fileCount: entries.length, modInfo }, zip, entries);
+      STATE.zipCache.set(p.id, zip);
+    }
+    STATE.entriesByPack.clear(); STATE.thumbCache.clear();
+    await reloadPacks(); loadSel(); renderWorkbench();
+    if ($('#viewWork').classList.contains('show')) { renderRail(); renderCenter(); }
+    return dropped;
+  }
+  $('#btnRebuild').onclick = async () => {
+    const b = $('#btnRebuild'); b.disabled = true; b.textContent = '⏳ 重建中…';
+    try { const dropped = await rebuildAll(); toast(`🔄 重建完成` + (dropped.length ? `,已移出纯 mod/整合包资源:${dropped.join('、')}` : '')); }
+    catch (err) { toast('重建失败: ' + err.message, true); }
+    b.disabled = false; b.textContent = '🔄 按最新引擎重建全部索引';
+  };
+  // ---- 工作台搜索/导出 ----
+  let sT; $('#wsSearch').oninput = e => { clearTimeout(sT); sT = setTimeout(() => { WS.q = e.target.value.trim(); WS.setPackId = null; renderCenter(); }, 180); };
+  $('#btnPack2').onclick = exportPack; $('#btnPack2b').onclick = exportPack;
+  $('#btnClear2').onclick = () => { STATE.sel.clear(); saveSel(); renderWorkbench(); renderCenter(); toast('已清空工作台'); };
+  $('#verSel2').value = localStorage.getItem('mm2_ver') || '15';
+  $('#verSel2').onchange = e => localStorage.setItem('mm2_ver', e.target.value);
+  window.addEventListener('error', ev => { const d=$('#dbg'); d.style.color='#f88'; d.textContent = 'ERR: ' + ev.message + ' @' + (ev.filename||'').split('/').pop() + ':' + ev.lineno; });
+  await reloadPacks();
+  // 引擎升级自动重建
+  if (STATE.packs.length && STATE.packs.some(p => p.engineVersion !== ENGINE_V)) {
+    $('#dbg').textContent = '🔄 分类引擎 v' + ENGINE_V + ' 已升级,自动重建索引中…';
+    const dropped = await rebuildAll();
+    toast('🔄 引擎已升级重建' + (dropped.length ? ',移出纯 mod 包:' + dropped.join('、') : ''));
+  }
+  $('#onlineLog').classList.remove('show'); $('#onlineLog').innerHTML = '';
+  loadSel();
+  renderWorkbench();
+  $('#dbg').textContent = 'engine v' + ENGINE_V + ' · packs ' + STATE.packs.length + ' · entries ' + [...STATE.entriesByPack.values()].reduce((s, a) => s + a.length, 0);
+})();
+</script>
+</body>
+</html>
