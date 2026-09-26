@@ -51,37 +51,44 @@ async function autoCheck(pack) {   // 导入后自动完整度检测,覆盖率�
     toast(`🔍「${pack.name}」${R.verdict} · 原版覆盖率 ${R.score}%`, R.warn > 0);
   } catch (e) {}
 }
-const CURATED = [
-  { slug: 'vanilla-pvp-textures', lic: 'MIT', name: 'Vanilla PvP Textures' },
-  { slug: 'aerox-16x', lic: 'MIT', name: 'Aerox 16x' },
-  { slug: 'spbr', lic: 'GPL-3.0-or-later', name: 'SPBR' },
-  { slug: 'yuushya-16x', lic: 'MIT', name: 'Yuushya 16x' },
-  { slug: 'fresh-vanilla-textures', lic: 'CC-BY-NC-SA-4.0', name: 'Fresh Vanilla Textures' },
-  { slug: 'connected-vanilla-textures', lic: 'CC-BY-NC-SA-4.0', name: 'Connected Vanilla Textures' },
-  { slug: 'better-leaves', lic: 'MIT', name: 'Better Leaves' },
-  { slug: 'fast-better-grass', lic: 'MIT', name: 'Fast Better Grass' },
-  { slug: 'default-dark-mode', lic: 'CC-BY-NC-SA-4.0', name: 'Default Dark Mode' },
-  { slug: 'new-glowing-ores', lic: 'CC-BY-NC-SA-4.0', name: 'New Glowing Ores' },
-  { slug: 'even-better-enchants', lic: 'Apache-2.0', name: 'Even Better Enchants' },
-  { slug: 'visual-armor-trims', lic: 'CC-BY-SA-4.0', name: 'Visual Armor Trims' },
-  { slug: 'round-trees', lic: 'MIT', name: 'Round Trees' },
-  { slug: 'comforts-modernized', lic: 'LGPL-3.0-only', name: 'Comforts Modernized' },
-];
+const CURATED = CLOUD_LIBRARY.slice(0, 10);
+async function importCloudPack(c) {
+  let url = c.url;
+  let license = c.lic;
+  let author = c.url ? 'Cloud:' + c.slug : 'Modrinth:' + c.slug;
+  if (!url) {
+    const projectResponse = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(c.slug)}`);
+    if (!projectResponse.ok) throw new Error('无法读取项目资料');
+    const project = await projectResponse.json();
+    if (project.project_type !== 'resourcepack') throw new Error('项目已不再是资源包');
+    license = project.license && project.license.id;
+    if (!license || license !== c.lic) throw new Error('项目许可证与清单不一致，请检查后再导入');
+    const versionResponse = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(c.slug)}/version`);
+    if (!versionResponse.ok) throw new Error('无法读取项目版本');
+    const versions = await versionResponse.json();
+    const file = versions.flatMap(v => v.files || []).find(f => f.primary && /\.zip(?:$|\?)/i.test(f.url))
+      || versions.flatMap(v => v.files || []).find(f => /\.zip(?:$|\?)/i.test(f.url));
+    if (!file) throw new Error('没有可用的资源包 zip');
+    url = file.url;
+  }
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('下载失败 (' + response.status + ')');
+  const buf = await response.arrayBuffer();
+  const pk = await importZipBuffer(buf, { name: c.name, license, source: c.url ? 'cloud' : 'modrinth', author });
+  autoCheck(pk);
+  return { pack: pk, bytes: buf.byteLength };
+}
 async function importCurated(onProgress) {
-  let ok = 0;
+  let ok = 0, skipped = 0;
   for (const c of CURATED) {
     try {
+      if (STATE.packs.some(p => p.author === 'Modrinth:' + c.slug || p.author === 'Cloud:' + c.slug)) { skipped++; continue; }
       onProgress(`正在获取 ${c.name}…`);
-      const vj = await (await fetch(`https://api.modrinth.com/v2/project/${c.slug}/version`)).json();
-      const file = (vj[0] && vj[0].files && vj[0].files.find(f => f.primary)) || (vj[0] && vj[0].files[0]);
-      if (!file) throw new Error('无版本文件');
-      const buf = await (await fetch(file.url)).arrayBuffer();
-      const pk = await importZipBuffer(buf, { name: c.name, license: c.lic, source: 'modrinth', author: 'Modrinth:' + c.slug });
-      ok++; onProgress(`✓ ${c.name}(${Math.round(buf.byteLength / 1024)}KB)`);
-      autoCheck(pk);
+      const result = await importCloudPack(c);
+      ok++; onProgress(`✓ ${c.name}(${Math.round(result.bytes / 1024)}KB)`);
     } catch (e) { onProgress(`✕ ${c.name}:${e.message}`); }
   }
-  onProgress(`完成:${ok}/${CURATED.length}`);
+  onProgress(`完成:新增 ${ok} 个，已存在 ${skipped} 个`);
 }
 async function reloadPacks() {
   STATE.packs = await DB.packs();
@@ -90,6 +97,7 @@ async function reloadPacks() {
   for (const k of [...STATE.entriesByPack.keys()]) if (!ids.has(k)) STATE.entriesByPack.delete(k);
   for (const [k, v] of [...STATE.sel]) if (!ids.has(v.packId)) STATE.sel.delete(k);
   renderHome();
+  if (typeof renderCloud === 'function') renderCloud();
   if (typeof renderRail === 'function' && $('#viewWork').classList.contains('show')) { renderRail(); renderCenter(); renderWorkbench(); }
 }
 

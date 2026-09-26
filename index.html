@@ -137,15 +137,36 @@ select.hbtn{appearance:none}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.err{border-color:var(--warn)}
 #dbg{position:fixed;bottom:2px;left:50%;transform:translateX(-50%);z-index:999;background:#0a0f1acc;color:#8fe;padding:2px 14px;border-radius:8px 8px 0 0;font:11px Consolas,monospace;max-width:92vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero{width:min(1080px,96vw);text-align:center;padding:28px 20px 24px;margin-bottom:24px;border:1px solid var(--line2);border-radius:22px;background:radial-gradient(circle at 50% -30%,rgba(87,230,168,.16),transparent 60%),linear-gradient(135deg,#142339,#0d1725);box-shadow:0 24px 70px rgba(0,0,0,.2)}
+.hero .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--acc);font-weight:700}
+.hero .sub{margin-bottom:0!important}
+.homebtns{width:min(1080px,96vw)}
+.dropzone{width:min(1080px,96vw);background:rgba(18,26,40,.55)}
+.cloud-head{width:100%;display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.cloud-head h2{font-size:18px}
+.cloud-head .hint{font-size:12px;color:var(--txt3)}
+.cloud-controls{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.cloud-controls input,.cloud-controls select{background:var(--card2);border:1px solid var(--line2);border-radius:8px;color:var(--txt);padding:7px 10px;font-size:12px;outline:none}
+.cloud-controls input:focus,.cloud-controls select:focus{border-color:var(--acc)}
+.cloud-summary{color:var(--txt3);font-size:12px;margin-bottom:10px}
+.cloud-card{display:flex;flex-direction:column;gap:8px;min-height:155px;transition:transform .15s,border-color .15s}
+.cloud-card:hover{transform:translateY(-2px);border-color:var(--line2)}
+.cloud-card h3{margin:0}
+.cloud-card .meta{margin:0}
+.cloud-card .ops{margin-top:auto;align-items:center;justify-content:space-between}
+.cloud-card .source{font-size:11px;color:var(--acc2);text-decoration:none}
+.cloud-card .source:hover{text-decoration:underline}
+@media(max-width:900px){body{height:auto;min-height:100vh;overflow:auto}#viewWork.show{min-height:100vh}.topbar{flex-wrap:wrap}.topbar>span{display:none}#wsSearch{order:5;max-width:none;width:100%}.workmain{grid-template-columns:150px minmax(0,1fr);height:auto;min-height:0}#wsRight{grid-column:1/-1;min-height:320px;max-height:55vh}#rail,#stage{max-height:58vh}}
+@media(max-width:600px){#viewHome{padding:16px 12px 40px}.hero{padding:24px 12px}.hero h1{font-size:25px!important}.homebtns{gap:8px}.homebtns .hbtn{flex:1 1 45%;font-size:12px;padding:10px 8px}.dropzone{padding:20px 12px}.cloud-head{align-items:stretch}.cloud-head .hint{width:100%}.cloud-controls{margin-left:0;width:100%}.cloud-controls input{flex:1;min-width:130px}.workmain{display:flex;flex-direction:column;padding:8px}#rail{display:flex;gap:5px;overflow-x:auto;max-height:none;flex:none}#rail .rcat{white-space:nowrap}#center{min-height:50vh}#stage{max-height:none;min-height:45vh}.topbar{padding:8px}#verSel2{max-width:145px}.dmain{flex-direction:column}.dimg{width:100%;height:190px}}
 </style>
 </head>
 <body>
 
 <!-- ================= 主界面 ================= -->
 <div id="viewHome">
-  <div style="font-size:40px">⛏️</div>
+  <div class="hero"><div class="eyebrow">Minecraft Resource Pack Studio</div><div style="font-size:40px">⛏️</div>
   <h1>Mine<b>Mixer</b> 混搭工作站</h1>
-  <div class="sub">把资源包拆开,跨包混搭属于你的整合包 —— 所有数据仅存本机</div>
+  <div class="sub">导入喜欢的资源包，挑选材质，自由混搭并导出 · 数据只存于你的浏览器</div></div>
   <div class="homebtns">
     <button class="hbtn big" id="btnLocal">📂 导入本地 zip</button>
     <button class="hbtn big" id="btnOnline">☁ 在线导入精选开放许可证包</button>
@@ -157,11 +178,12 @@ select.hbtn{appearance:none}
   <div class="dropzone" id="dropzone">把 .zip 资源包拖到这里(可多选) · 或点上方按钮</div>
   <div id="homePacks"></div>
   <div style="width:min(1080px,96vw);margin-top:34px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    <div class="cloud-head">
       <h2 style="font-size:18px">🌐 云端包库</h2>
-      <span style="font-size:12px;color:var(--txt3)">托管于开放的包库清单——任何人都能扩充(编辑 cloud-library.js 或提交 PR)</span>
-      <input id="cloudSearch" placeholder="🔍 过滤" style="margin-left:auto;background:var(--card2);border:1px solid var(--line2);border-radius:8px;color:var(--txt);padding:5px 10px;font-size:12px;outline:none;width:180px">
+      <span class="hint">精选开放许可资源包 · 按需导入</span>
+      <div class="cloud-controls"><input id="cloudSearch" type="search" placeholder="搜索名称、标签、许可" aria-label="搜索云端包库"><select id="cloudCategory" aria-label="云库分类"><option value="">全部分类</option></select><select id="cloudSort" aria-label="云库排序"><option value="default">精选排序</option><option value="name">名称排序</option><option value="new">新加入优先</option></select></div>
     </div>
+    <div id="cloudSummary" class="cloud-summary" aria-live="polite"></div>
     <div id="cloudList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px"></div>
     <div style="text-align:center;margin-top:10px"><button class="hbtn" id="cloudMore" style="display:none">加载更多</button></div>
   </div>
@@ -266,29 +288,37 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
   };
   $('#btnOnline').onclick = runOnline;
   // ---- 云端包库(分页+过滤,不堆一屏) ----
-  const CLOUD = { shown: 24, q: '' };
+  const CLOUD = { shown: 24, q: '', category: '', sort: 'default' };
+  for (const tag of [...new Set(CLOUD_LIBRARY.flatMap(c => c.tags || []))].sort((a,b) => a.localeCompare(b, 'zh-CN'))) {
+    const option = document.createElement('option'); option.value = tag; option.textContent = tag; $('#cloudCategory').appendChild(option);
+  }
   window.renderCloud = function () {
     const box = $('#cloudList'); if (!box) return;
-    const imported = new Set(STATE.packs.map(p => (p.source === 'modrinth' && p.author) ? p.author.replace('Modrinth:', '') : p.name.toLowerCase()));
+    const imported = new Set(STATE.packs.map(p => /^(Modrinth|Cloud):/.test(p.author || '') ? p.author.split(':').slice(1).join(':') : p.name.toLowerCase()));
     const q = CLOUD.q.toLowerCase();
-    const list = CLOUD_LIBRARY.filter(c => !q || c.name.toLowerCase().includes(q) || (c.tags || []).some(t => t.toLowerCase().includes(q)) || c.slug.includes(q));
+    const list = CLOUD_LIBRARY.filter(c => (!CLOUD.category || (c.tags || []).includes(CLOUD.category)) && (!q || [c.name, c.slug, c.lic, ...(c.tags || [])].some(v => v.toLowerCase().includes(q))));
+    if (CLOUD.sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name, 'zh-CN'));
+    if (CLOUD.sort === 'new') list.reverse();
     box.innerHTML = '';
+    $('#cloudSummary').textContent = `显示 ${Math.min(list.length, CLOUD.shown)} / ${list.length} 个资源包 · 已入库 ${CLOUD_LIBRARY.filter(c => imported.has(c.slug) || imported.has(c.name.toLowerCase())).length} 个`;
+    if (!list.length) box.innerHTML = '<div class="empty" style="grid-column:1/-1">没有找到匹配的资源包，试试其他关键词或分类。</div>';
     for (const c of list.slice(0, CLOUD.shown)) {
       const done = imported.has(c.slug) || imported.has(c.name.toLowerCase());
-      const el = document.createElement('div'); el.className = 'hpack';
-      el.innerHTML = `<h3>${c.name}</h3>
-        <div class="meta"><span class="lic ok">${c.lic.slice(0, 18)}</span>${(c.tags || []).map(t => `<span>#${t}</span>`).join('')}</div>
-        <div class="ops"><button class="hbtn ci" ${done ? 'disabled' : ''}>${done ? '✓ 已入库' : '⬇ 导入'}</button></div>`;
+      const el = document.createElement('div'); el.className = 'hpack cloud-card';
+      const title = document.createElement('h3'); title.textContent = c.name; el.appendChild(title);
+      const meta = document.createElement('div'); meta.className = 'meta';
+      const license = document.createElement('span'); license.className = 'lic ok'; license.textContent = c.lic; meta.appendChild(license);
+      for (const tag of c.tags || []) { const span = document.createElement('span'); span.textContent = '#' + tag; meta.appendChild(span); }
+      el.appendChild(meta);
+      const ops = document.createElement('div'); ops.className = 'ops';
+      const btn = document.createElement('button'); btn.className = 'hbtn ci'; btn.disabled = done; btn.textContent = done ? '✓ 已入库' : '⬇ 导入'; ops.appendChild(btn);
+      const source = document.createElement('a'); source.className = 'source'; source.href = c.url || `https://modrinth.com/resourcepack/${encodeURIComponent(c.slug)}`; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.textContent = '查看来源 ↗'; ops.appendChild(source);
+      el.appendChild(ops);
       if (!done) el.querySelector('.ci').onclick = async () => {
         const btn = el.querySelector('.ci'); btn.disabled = true; btn.textContent = '⬇ 中…';
         try {
-          const vj = await (await fetch(`https://api.modrinth.com/v2/project/${c.slug}/version`)).json();
-          const file = (vj[0] && vj[0].files && (vj[0].files.find(f => f.primary) || vj[0].files[0]));
-          if (!file) throw new Error('无版本文件');
-          const buf = await (await fetch(file.url)).arrayBuffer();
-          const pk = await importZipBuffer(buf, { name: c.name, license: c.lic, source: 'modrinth', author: 'Modrinth:' + c.slug });
+          await importCloudPack(c);
           btn.textContent = '✓ 已入库';
-          autoCheck(pk);
         } catch (e) { btn.disabled = false; btn.textContent = '⬇ 导入'; toast(`✕ ${c.name}: ${e.message}`, true); }
       };
       box.appendChild(el);
@@ -299,6 +329,8 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
     more.onclick = () => { CLOUD.shown += 24; renderCloud(); };
   };
   $('#cloudSearch').oninput = e => { CLOUD.q = e.target.value; CLOUD.shown = 24; renderCloud(); };
+  $('#cloudCategory').onchange = e => { CLOUD.category = e.target.value; CLOUD.shown = 24; renderCloud(); };
+  $('#cloudSort').onchange = e => { CLOUD.sort = e.target.value; CLOUD.shown = 24; renderCloud(); };
   // ---- 📤 投稿到云端包库:清洗(只留原版)→ 下载投稿包 → 生成条目代码与三步向导 ----
   const subInput = document.createElement('input');
   subInput.type = 'file'; subInput.accept = '.zip'; subInput.style.display = 'none';
@@ -323,7 +355,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
       outFiles.unshift({ name: 'pack.mcmeta', data: new TextEncoder().encode(JSON.stringify({ pack: { pack_format: 15, supported_formats: { min_inclusive: 15, max_inclusive: 999 }, description: base + ' · MineMixer cloud' } }, null, 2)) });
     }
     const slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'my-pack';
-    const entryCode = `  { slug: '${slug}', name: '${base}', lic: 'CC0-1.0', url: 'https://你的存储直链/${slug}.zip', tags: [] },`;
+    const entryCode = `  { slug: '${slug}', name: '${base}', lic: '请填写真实 SPDX 许可证', url: 'https://你的存储直链/${slug}.zip', tags: [] },`;
     const blob = zipStore(outFiles);
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = slug + '.zip'; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 800);
@@ -340,7 +372,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
       <p style="color:var(--txt2);font-size:13px;margin:10px 0">✅ <b>清洗包已下载:${slug}.zip</b>(原版条目 ${entries.length} 个 · ${modSum})<br>它只含 assets/minecraft 原版内容,可直接公开托管。</p>
       <p style="font-size:13px;color:var(--txt2);margin:14px 0 6px"><b>① 上传清洗包到对象存储(推荐 Cloudflare R2,零流量费)</b><br>R2 控制台 → 创建 bucket → 上传 ${slug}.zip → 开启公开访问 → 复制直链,替换下面代码里的 url:</p>
       <pre style="background:var(--bg);padding:10px;border-radius:8px;font-size:11.5px;overflow-x:auto;user-select:all">${entryCode}</pre>
-      <p style="font-size:13px;color:var(--txt2);margin:14px 0 6px"><b>② 加入云端包库清单</b><br>打开 js/cloud-library.js,把上面这行粘进数组(可改 name / lic / tags)。</p>
+      <p style="font-size:13px;color:var(--txt2);margin:14px 0 6px"><b>② 确认授权并加入清单</b><br>仅投稿你有权公开分发的内容。打开 js/cloud-library.js,把上面这行粘进数组，并把 lic 改为真实许可证。</p>
       <p style="font-size:13px;color:var(--txt2);margin:14px 0 6px"><b>③ 提交(GitHub 上编辑该文件会自动生成 PR)</b><br>合并后,全站用户在「🌐 云端包库」即可看到并一键导入你的包。</p>
       <div style="display:flex;gap:10px;margin-top:16px"><button class="hbtn primary" id="copyEntry">📋 复制条目代码</button><button class="hbtn" id="closeSub">关闭</button></div>`;
     $('#copyEntry').onclick = () => navigator.clipboard.writeText(entryCode).then(() => toast('✓ 条目代码已复制')).catch(() => toast('复制失败,请手动选中复制', true));
