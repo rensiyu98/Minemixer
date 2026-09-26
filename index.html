@@ -156,6 +156,12 @@ select.hbtn{appearance:none}
 .cloud-card .ops{margin-top:auto;align-items:center;justify-content:space-between}
 .cloud-card .source{font-size:11px;color:var(--acc2);text-decoration:none}
 .cloud-card .source:hover{text-decoration:underline}
+.cloud-tabs{display:flex;gap:7px;margin:0 0 14px;flex-wrap:wrap}
+.cloud-tabs .active{background:var(--acc);border-color:var(--acc);color:#092016;font-weight:700}
+.cloud-card .favorite{font-size:17px;padding:3px 8px;line-height:1.2}
+.cloud-card .favorite.on{color:#ffd166;border-color:#8c6a30}
+.cloud-card .desc{font-size:11.5px;color:var(--txt3);line-height:1.4;min-height:32px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cloud-card .icon{width:40px;height:40px;object-fit:cover;image-rendering:pixelated;border-radius:8px;float:right;margin-left:8px}
 @media(max-width:900px){body{height:auto;min-height:100vh;overflow:auto}#viewWork.show{min-height:100vh}.topbar{flex-wrap:wrap}.topbar>span{display:none}#wsSearch{order:5;max-width:none;width:100%}.workmain{grid-template-columns:150px minmax(0,1fr);height:auto;min-height:0}#wsRight{grid-column:1/-1;min-height:320px;max-height:55vh}#rail,#stage{max-height:58vh}}
 @media(max-width:600px){#viewHome{padding:16px 12px 40px}.hero{padding:24px 12px}.hero h1{font-size:25px!important}.homebtns{gap:8px}.homebtns .hbtn{flex:1 1 45%;font-size:12px;padding:10px 8px}.dropzone{padding:20px 12px}.cloud-head{align-items:stretch}.cloud-head .hint{width:100%}.cloud-controls{margin-left:0;width:100%}.cloud-controls input{flex:1;min-width:130px}.workmain{display:flex;flex-direction:column;padding:8px}#rail{display:flex;gap:5px;overflow-x:auto;max-height:none;flex:none}#rail .rcat{white-space:nowrap}#center{min-height:50vh}#stage{max-height:none;min-height:45vh}.topbar{padding:8px}#verSel2{max-width:145px}.dmain{flex-direction:column}.dimg{width:100%;height:190px}}
 </style>
@@ -178,9 +184,10 @@ select.hbtn{appearance:none}
   <div class="dropzone" id="dropzone">把 .zip 资源包拖到这里(可多选) · 或点上方按钮</div>
   <div id="homePacks"></div>
   <div style="width:min(1080px,96vw);margin-top:34px">
+    <div class="cloud-tabs" role="tablist" aria-label="资源包目录"><button class="hbtn active" data-cloud-tab="featured" role="tab" aria-selected="true">精选库</button><button class="hbtn" data-cloud-tab="online" role="tab" aria-selected="false">在线发现</button><button class="hbtn" data-cloud-tab="favorites" role="tab" aria-selected="false">★ 我的收藏</button></div>
     <div class="cloud-head">
       <h2 style="font-size:18px">🌐 云端包库</h2>
-      <span class="hint">精选开放许可资源包 · 按需导入</span>
+      <span class="hint" id="cloudHint">精选开放许可资源包 · 按需导入</span>
       <div class="cloud-controls"><input id="cloudSearch" type="search" placeholder="搜索名称、标签、许可" aria-label="搜索云端包库"><select id="cloudCategory" aria-label="云库分类"><option value="">全部分类</option></select><select id="cloudSort" aria-label="云库排序"><option value="default">精选排序</option><option value="name">名称排序</option><option value="new">新加入优先</option></select></div>
     </div>
     <div id="cloudSummary" class="cloud-summary" aria-live="polite"></div>
@@ -251,6 +258,12 @@ select.hbtn{appearance:none}
 <div id="toast"></div>
 <div id="dbg"></div>
 
+<script>
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+function toast(msg, err){const t=$('#toast');t.textContent=msg;t.className='show'+(err?' err':'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='',3000);}
+function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
+</script>
 <script src="js/lib/pako_inflate.min.js"></script>
 <script src="js/zip.js"></script>
 <script src="js/lang_zh.js"></script>
@@ -263,10 +276,6 @@ select.hbtn{appearance:none}
 <script src="js/workbench.js"></script>
 <script>
 'use strict';
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
-function toast(msg, err){const t=$('#toast');t.textContent=msg;t.className='show'+(err?' err':'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='',3000);}
-function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
-
 (async function boot(){
   await DB.open();
   // ---- 视图切换 ----
@@ -287,31 +296,76 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
     await reloadPacks();
   };
   $('#btnOnline').onclick = runOnline;
-  // ---- 云端包库(分页+过滤,不堆一屏) ----
-  const CLOUD = { shown: 24, q: '', category: '', sort: 'default' };
+  // ---- 精选 + Modrinth 在线发现 + 本机收藏 ----
+  const OPEN_LICENSES = ['MIT','CC0-1.0','CC-BY-3.0','CC-BY-4.0','CC-BY-SA-3.0','CC-BY-SA-4.0','CC-BY-NC-4.0','CC-BY-NC-SA-4.0','Apache-2.0','GPL-3.0-only','GPL-3.0-or-later','LGPL-3.0-only','LGPL-3.0-or-later','MPL-2.0','BSD-2-Clause','BSD-3-Clause','Unlicense'];
+  const CLOUD = { tab: 'featured', shown: 24, q: '', category: '', sort: 'default', hits: [], total: 0, offset: 0, loading: false, request: 0 };
+  const FAVORITES_KEY = 'mm2_favorites';
+  let favorites;
+  try { favorites = new Map((JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []).filter(c => c && c.slug).map(c => [c.slug, c])); }
+  catch (_) { favorites = new Map(); }
+  function saveFavorites() { try { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites.values()])); } catch (_) { toast('收藏保存失败：浏览器存储空间不足', true); } }
+  function selectCloudTab(tab) {
+    CLOUD.tab = tab; CLOUD.shown = 24;
+    $$('.cloud-tabs button').forEach(b => { const active = b.dataset.cloudTab === tab; b.classList.toggle('active', active); b.setAttribute('aria-selected', String(active)); });
+    $('#cloudCategory').style.display = tab === 'featured' ? '' : 'none';
+    $('#cloudSort').style.display = tab === 'favorites' ? 'none' : '';
+    $('#cloudSort').options[0].textContent = tab === 'online' ? '下载量' : '精选排序';
+    $('#cloudSort').options[1].textContent = tab === 'online' ? '相关度' : '名称排序';
+    $('#cloudHint').textContent = tab === 'featured' ? '精选开放许可资源包 · 按需导入' : tab === 'online' ? '实时检索 Modrinth 开放许可资源包 · 文件仍由原站提供' : '收藏保存在当前浏览器 · 换设备不会自动同步';
+    $('#cloudSearch').placeholder = tab === 'online' ? '搜索在线资源包' : '搜索名称、标签、许可';
+    if (tab === 'online') searchOnline(true); else renderCloud();
+  }
+  $$('.cloud-tabs button').forEach(b => b.onclick = () => selectCloudTab(b.dataset.cloudTab));
   for (const tag of [...new Set(CLOUD_LIBRARY.flatMap(c => c.tags || []))].sort((a,b) => a.localeCompare(b, 'zh-CN'))) {
     const option = document.createElement('option'); option.value = tag; option.textContent = tag; $('#cloudCategory').appendChild(option);
+  }
+  async function searchOnline(reset) {
+    if (reset) { CLOUD.hits = []; CLOUD.total = 0; CLOUD.offset = 0; }
+    const seq = ++CLOUD.request;
+    CLOUD.loading = true; renderCloud();
+    const facets = JSON.stringify([['project_type:resourcepack'], OPEN_LICENSES.map(lic => 'license:' + lic)]);
+    const params = new URLSearchParams({ query: CLOUD.q, facets, index: CLOUD.sort === 'new' ? 'newest' : CLOUD.sort === 'name' ? 'relevance' : 'downloads', offset: String(CLOUD.offset), limit: '24' });
+    try {
+      const response = await fetch('https://api.modrinth.com/v2/search?' + params);
+      if (!response.ok) throw new Error('在线搜索失败 (' + response.status + ')');
+      const result = await response.json();
+      if (seq !== CLOUD.request) return;
+      CLOUD.offset += (result.hits || []).length;
+      const seen = new Set(CLOUD.hits.map(c => c.slug));
+      for (const h of result.hits || []) {
+        if (h.project_type !== 'resourcepack' || !OPEN_LICENSES.includes(h.license) || seen.has(h.slug)) continue;
+        CLOUD.hits.push({ slug: h.slug, name: h.title, lic: h.license, tags: h.categories || [], desc: h.description || '', icon: h.icon_url || '', downloads: h.downloads || 0 });
+        seen.add(h.slug);
+      }
+      CLOUD.total = result.total_hits || 0;
+    } catch (e) { if (seq === CLOUD.request) toast(e.message, true); }
+    finally { if (seq === CLOUD.request) { CLOUD.loading = false; renderCloud(); } }
   }
   window.renderCloud = function () {
     const box = $('#cloudList'); if (!box) return;
     const imported = new Set(STATE.packs.map(p => /^(Modrinth|Cloud):/.test(p.author || '') ? p.author.split(':').slice(1).join(':') : p.name.toLowerCase()));
     const q = CLOUD.q.toLowerCase();
-    const list = CLOUD_LIBRARY.filter(c => (!CLOUD.category || (c.tags || []).includes(CLOUD.category)) && (!q || [c.name, c.slug, c.lic, ...(c.tags || [])].some(v => v.toLowerCase().includes(q))));
-    if (CLOUD.sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name, 'zh-CN'));
-    if (CLOUD.sort === 'new') list.reverse();
+    const list = CLOUD.tab === 'online' ? CLOUD.hits : (CLOUD.tab === 'favorites' ? [...favorites.values()] : CLOUD_LIBRARY).filter(c => (!CLOUD.category || CLOUD.tab !== 'featured' || (c.tags || []).includes(CLOUD.category)) && (!q || [c.name, c.slug, c.lic, ...(c.tags || [])].some(v => v.toLowerCase().includes(q))));
+    if (CLOUD.tab === 'featured' && CLOUD.sort === 'name') list.sort((a,b) => a.name.localeCompare(b.name, 'zh-CN'));
+    if (CLOUD.tab === 'featured' && CLOUD.sort === 'new') list.reverse();
     box.innerHTML = '';
-    $('#cloudSummary').textContent = `显示 ${Math.min(list.length, CLOUD.shown)} / ${list.length} 个资源包 · 已入库 ${CLOUD_LIBRARY.filter(c => imported.has(c.slug) || imported.has(c.name.toLowerCase())).length} 个`;
-    if (!list.length) box.innerHTML = '<div class="empty" style="grid-column:1/-1">没有找到匹配的资源包，试试其他关键词或分类。</div>';
-    for (const c of list.slice(0, CLOUD.shown)) {
+    $('#cloudSummary').textContent = CLOUD.tab === 'online' ? `${CLOUD.loading ? '正在搜索 · ' : ''}已加载 ${list.length} 个 · 在线结果约 ${CLOUD.total} 个 · 收藏 ${favorites.size} 个` : `显示 ${Math.min(list.length, CLOUD.shown)} / ${list.length} 个资源包 · 收藏 ${favorites.size} 个`;
+    if (!list.length) box.innerHTML = `<div class="empty" style="grid-column:1/-1">${CLOUD.loading ? '正在加载在线资源包…' : CLOUD.tab === 'favorites' ? '还没有收藏。点击资源包卡片上的 ☆ 即可收藏。' : '没有找到匹配的资源包，试试其他关键词。'}</div>`;
+    for (const c of (CLOUD.tab === 'online' ? list : list.slice(0, CLOUD.shown))) {
       const done = imported.has(c.slug) || imported.has(c.name.toLowerCase());
       const el = document.createElement('div'); el.className = 'hpack cloud-card';
+      if (c.icon && /^https:\/\/cdn\.modrinth\.com\//.test(c.icon)) { const img = document.createElement('img'); img.className = 'icon'; img.src = c.icon; img.alt = ''; img.loading = 'lazy'; el.appendChild(img); }
       const title = document.createElement('h3'); title.textContent = c.name; el.appendChild(title);
       const meta = document.createElement('div'); meta.className = 'meta';
       const license = document.createElement('span'); license.className = 'lic ok'; license.textContent = c.lic; meta.appendChild(license);
-      for (const tag of c.tags || []) { const span = document.createElement('span'); span.textContent = '#' + tag; meta.appendChild(span); }
+      for (const tag of (c.tags || []).slice(0, 3)) { const span = document.createElement('span'); span.textContent = '#' + tag; meta.appendChild(span); }
       el.appendChild(meta);
+      if (c.desc) { const desc = document.createElement('div'); desc.className = 'desc'; desc.textContent = c.desc; el.appendChild(desc); }
       const ops = document.createElement('div'); ops.className = 'ops';
       const btn = document.createElement('button'); btn.className = 'hbtn ci'; btn.disabled = done; btn.textContent = done ? '✓ 已入库' : '⬇ 导入'; ops.appendChild(btn);
+      const star = document.createElement('button'); star.className = 'hbtn favorite' + (favorites.has(c.slug) ? ' on' : ''); star.textContent = favorites.has(c.slug) ? '★' : '☆'; star.title = favorites.has(c.slug) ? '取消收藏' : '收藏'; star.setAttribute('aria-label', star.title);
+      star.onclick = () => { if (favorites.has(c.slug)) favorites.delete(c.slug); else favorites.set(c.slug, { slug: c.slug, name: c.name, lic: c.lic, tags: c.tags || [], desc: c.desc || '', icon: c.icon || '', url: c.url }); saveFavorites(); renderCloud(); };
+      ops.appendChild(star);
       const source = document.createElement('a'); source.className = 'source'; source.href = c.url || `https://modrinth.com/resourcepack/${encodeURIComponent(c.slug)}`; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.textContent = '查看来源 ↗'; ops.appendChild(source);
       el.appendChild(ops);
       if (!done) el.querySelector('.ci').onclick = async () => {
@@ -324,13 +378,14 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
       box.appendChild(el);
     }
     const more = $('#cloudMore');
-    more.style.display = list.length > CLOUD.shown ? '' : 'none';
-    more.textContent = `加载更多(共 ${list.length} 个)`;
-    more.onclick = () => { CLOUD.shown += 24; renderCloud(); };
+    more.style.display = CLOUD.tab === 'online' ? (!CLOUD.loading && CLOUD.offset < CLOUD.total ? '' : 'none') : (list.length > CLOUD.shown ? '' : 'none');
+    more.textContent = CLOUD.tab === 'online' ? '加载更多在线资源包' : `加载更多(共 ${list.length} 个)`;
+    more.onclick = () => { if (CLOUD.tab === 'online') searchOnline(false); else { CLOUD.shown += 24; renderCloud(); } };
   };
-  $('#cloudSearch').oninput = e => { CLOUD.q = e.target.value; CLOUD.shown = 24; renderCloud(); };
+  let cloudTimer;
+  $('#cloudSearch').oninput = e => { CLOUD.q = e.target.value.trim(); CLOUD.shown = 24; clearTimeout(cloudTimer); if (CLOUD.tab === 'online') cloudTimer = setTimeout(() => searchOnline(true), 300); else renderCloud(); };
   $('#cloudCategory').onchange = e => { CLOUD.category = e.target.value; CLOUD.shown = 24; renderCloud(); };
-  $('#cloudSort').onchange = e => { CLOUD.sort = e.target.value; CLOUD.shown = 24; renderCloud(); };
+  $('#cloudSort').onchange = e => { CLOUD.sort = e.target.value; CLOUD.shown = 24; if (CLOUD.tab === 'online') searchOnline(true); else renderCloud(); };
   // ---- 📤 投稿到云端包库:清洗(只留原版)→ 下载投稿包 → 生成条目代码与三步向导 ----
   const subInput = document.createElement('input');
   subInput.type = 'file'; subInput.accept = '.zip'; subInput.style.display = 'none';
