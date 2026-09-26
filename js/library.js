@@ -17,13 +17,13 @@ async function importZipBuffer(buf, meta) {
   let mc = {};
   const mE = ents.find(e => e.name === 'pack.mcmeta');
   if (mE) { try { mc = JSON.parse(new TextDecoder().decode(ZR.read(buf, mE))); } catch (e) {} }
-  const { entries, modInfo } = buildEntries(ents);
+  const parsed = buildEntries(ents);
+  const entries = selectVanillaTextureEntries(parsed.entries), modInfo = parsed.modInfo;
   if (!entries.length) {
     const msum = modInfo.modNs.slice(0, 3).map(m => m.ns + '×' + m.count).join(', ');
-    throw new Error('未检测到原版材质覆盖 —— 这是整合包/mod 专用资源(' + msum + '),不适合材质混搭,已拒收');
+    throw new Error('没有找到可混搭的原版贴图（assets/minecraft/textures/ 下的 PNG/TGA）' + (msum ? '；检测到模组命名空间：' + msum : ''));
   }
-  const textureCount = countVanillaTextures(entries);
-  if (!textureCount) throw new Error('这个资源包没有可混搭的原版材质贴图（PNG/TGA），可能只包含音效、语言或配置');
+  const textureCount = entries.length;
   const id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const pack = { id, name: meta.name || mcmetaName(mc) || '未命名包', author: meta.author || '', license: meta.license || '未知(本地导入,注意授权)', source: meta.source || 'local', importedAt: Date.now(), fileCount: entries.length, textureCount, modInfo, engineVersion: ENGINE_V };
   await DB.putPack(pack, buf, entries);
@@ -106,7 +106,7 @@ async function reloadPacks() {
 /* ---------- 主界面:包管理 ---------- */
 function renderHome() {
   const box = $('#homePacks'); box.innerHTML = '';
-  if (!STATE.packs.length) { box.innerHTML = '<div class="empty" style="grid-column:1/-1">还没有导入资源包 —— 拖个 zip 上来,或点「在线导入」</div>'; return; }
+  if (!STATE.packs.length) { box.innerHTML = '<div class="empty" style="grid-column:1/-1">还没有导入材质包 —— 拖入一个材质包 zip，或从精选库挑选</div>'; return; }
   for (const p of STATE.packs) {
     const el = document.createElement('div'); el.className = 'hpack';
     const licOk = /MIT|Apache|CC0|CC-BY|LGPL|MPL|GPL/.test(p.license);

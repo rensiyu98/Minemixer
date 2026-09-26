@@ -14,7 +14,6 @@ const CLOUD_LIBRARY = [
   { slug: 'new-glowing-ores', name: 'New Glowing Ores', lic: 'CC-BY-NC-SA-4.0', tags: ['矿石'] },
   { slug: 'even-better-enchants', name: 'Even Better Enchants', lic: 'Apache-2.0', tags: ['附魔'] },
   { slug: 'visual-armor-trims', name: 'Visual Armor Trims', lic: 'CC-BY-SA-4.0', tags: ['纹饰'] },
-  { slug: 'night-vision', name: 'Night Vision', lic: 'CC-BY-4.0', tags: ['环境'] },
   { slug: 'better-old-netherrack', name: 'Better Old Netherrack', lic: 'MIT', tags: ['方块'] },
   { slug: 'blinking-ender-eyes', name: 'Blinking Ender Eyes', lic: 'MIT', tags: ['物品'] },
   { slug: 'clean-connected-glass', name: 'Clean Connected Glass', lic: 'CC-BY-NC-SA-4.0', tags: ['方块'] },

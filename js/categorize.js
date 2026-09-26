@@ -1,6 +1,6 @@
 'use strict';
 /* ============ 路径解析 / 自动分类 / 文件配对 ============ */
-const ENGINE_V = 5;   // 分类引擎版本(改动解析逻辑时+1;启动时自动重建旧索引)
+const ENGINE_V = 6;   // 分类引擎版本(改动解析逻辑时+1;启动时自动重建旧索引)
 /* 分类体系(基于真实资源包解剖):
    block方块 item物品 entity实体 gui界面 particle粒子 env环境 model模型 blockstate方块状态
    cem实体模型动画 cit物品皮肤 ofanim动画贴图 particledef粒子定义 misc其他 */
@@ -13,7 +13,6 @@ const CATS = [
   { id: 'gui',     name: '界面' },
   { id: 'particle',name: '粒子' },
   { id: 'env',     name: '环境' },
-  { id: 'model',   name: '模型' },
   { id: 'other',   name: '其他' },
 ];
 
@@ -63,7 +62,7 @@ function parsePath(p){
 
   const mk = (cat, group, sub) => ({ ns, cat, group: group || groupOf(cat, sub || baseRaw, r), sub: sub || baseRaw, base: baseRaw, ext, isMcmetaSidecar, rel: r });
 
-  if (isMcmetaSidecar) return { ns, sidecarOf: r.replace(/\.mcmeta$/i, ''), isMcmetaSidecar };
+  if (isMcmetaSidecar) return { ns, sidecarOf: p.replace(/\.mcmeta$/i, ''), isMcmetaSidecar };
 
   if (seg[0] === 'textures') {
     const t = seg[1];
@@ -100,9 +99,17 @@ function parsePath(p){
 const CAT_LABEL = { block: '方块', item: '物品', entity: '实体', gui: '界面', particle: '粒子', env: '环境',
   model: '模型', blockstate: '方块状态', cem: '实体模型', cit: '物品皮肤', ofanim: 'OF动画', particledef: '粒子定义', misc: '其他' };
 const DEPS = { cem: 'OptiFine / EMF(实体模型前置)', cit: 'OptiFine / CIT Resewn', ofanim: 'OptiFine' };
-function countVanillaTextures(entries) {
-  return entries.filter(e => e.files.some(f => /(?:^|\/)assets\/minecraft\/(?:textures|optifine)\/.*\.(?:png|tga)$/i.test(f.name))).length;
+const isVanillaTexture = name => /(?:^|\/)assets\/minecraft\/textures\/.+\.(?:png|tga)$/i.test(name);
+function selectVanillaTextureEntries(entries) {
+  return entries.map(entry => {
+    const images = entry.files.filter(f => isVanillaTexture(f.name));
+    if (!images.length) return null;
+    const names = new Set(images.map(f => f.name + '.mcmeta'));
+    const sidecars = entry.files.filter(f => names.has(f.name));
+    return { ...entry, files: [...images, ...sidecars], deps: null };
+  }).filter(Boolean);
 }
+function countVanillaTextures(entries) { return selectVanillaTextureEntries(entries).length; }
 
 /* 把一个包的全部文件列表 → 条目列表(贴图中心模型:模型/方块状态吸附到同名贴图) */
 function buildEntries(files /* [{name,size,method,localOff}] */){

@@ -26,6 +26,22 @@ const DB = {
     const puts = entries.map(e => DB.req(st.put({ ...e, id: pack.id + '|' + e.path, packId: pack.id })));
     await Promise.all(puts);
   },
+  replacePack(pack, zipBuf, entries) {
+    return new Promise((ok, no) => {
+      const tx = DB.tx(['packs', 'entries'], 'readwrite');
+      const store = tx.objectStore('entries');
+      const cursor = store.index('packId').openCursor(pack.id);
+      cursor.onsuccess = () => {
+        const row = cursor.result;
+        if (row) { row.delete(); row.continue(); return; }
+        tx.objectStore('packs').put({ ...pack, zip: zipBuf });
+        for (const entry of entries) store.put({ ...entry, id: pack.id + '|' + entry.path, packId: pack.id });
+      };
+      tx.oncomplete = () => ok();
+      tx.onerror = () => no(tx.error);
+      tx.onabort = () => no(tx.error);
+    });
+  },
   async packs() {
     const all = await DB.req(DB.tx(['packs']).objectStore('packs').getAll());
     return all.map(p => ({ ...p, zip: undefined, size: p.zip ? p.zip.byteLength : 0 })).sort((a, b) => b.importedAt - a.importedAt);
