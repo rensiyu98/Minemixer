@@ -186,8 +186,8 @@ select.hbtn{appearance:none}
   <div style="width:min(1080px,96vw);margin-top:34px">
     <div class="cloud-tabs" role="tablist" aria-label="资源包目录"><button class="hbtn active" data-cloud-tab="featured" role="tab" aria-selected="true">精选库</button><button class="hbtn" data-cloud-tab="online" role="tab" aria-selected="false">在线发现</button><button class="hbtn" data-cloud-tab="favorites" role="tab" aria-selected="false">★ 我的收藏</button></div>
     <div class="cloud-head">
-      <h2 style="font-size:18px">🌐 云端包库</h2>
-      <span class="hint" id="cloudHint">精选开放许可资源包 · 按需导入</span>
+      <h2 style="font-size:18px">🌐 材质包库</h2>
+      <span class="hint" id="cloudHint">精选开放许可材质包 · 按需导入</span>
       <div class="cloud-controls"><input id="cloudSearch" type="search" placeholder="搜索名称、标签、许可" aria-label="搜索云端包库"><select id="cloudCategory" aria-label="云库分类"><option value="">全部分类</option></select><select id="cloudSort" aria-label="云库排序"><option value="default">精选排序</option><option value="name">名称排序</option><option value="new">新加入优先</option></select></div>
     </div>
     <div id="cloudSummary" class="cloud-summary" aria-live="polite"></div>
@@ -311,7 +311,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
     $('#cloudSort').style.display = tab === 'favorites' ? 'none' : '';
     $('#cloudSort').options[0].textContent = tab === 'online' ? '下载量' : '精选排序';
     $('#cloudSort').options[1].textContent = tab === 'online' ? '相关度' : '名称排序';
-    $('#cloudHint').textContent = tab === 'featured' ? '精选开放许可资源包 · 按需导入' : tab === 'online' ? '实时检索 Modrinth 开放许可资源包 · 文件仍由原站提供' : '收藏保存在当前浏览器 · 换设备不会自动同步';
+    $('#cloudHint').textContent = tab === 'featured' ? '精选开放许可材质包 · 按需导入' : tab === 'online' ? '按视觉类别检索 Modrinth 项目；导入时核验包内贴图' : '收藏保存在当前浏览器 · 换设备不会自动同步';
     $('#cloudSearch').placeholder = tab === 'online' ? '搜索在线资源包' : '搜索名称、标签、许可';
     if (tab === 'online') searchOnline(true); else renderCloud();
   }
@@ -323,7 +323,8 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
     if (reset) { CLOUD.hits = []; CLOUD.total = 0; CLOUD.offset = 0; }
     const seq = ++CLOUD.request;
     CLOUD.loading = true; renderCloud();
-    const facets = JSON.stringify([['project_type:resourcepack'], OPEN_LICENSES.map(lic => 'license:' + lic)]);
+    const visualCategories = ['blocks','items','entities','gui','environment','equipment','models','decoration'];
+    const facets = JSON.stringify([['project_type:resourcepack'], visualCategories.map(cat => 'categories:' + cat), OPEN_LICENSES.map(lic => 'license:' + lic)]);
     const params = new URLSearchParams({ query: CLOUD.q, facets, index: CLOUD.sort === 'new' ? 'newest' : CLOUD.sort === 'name' ? 'relevance' : 'downloads', offset: String(CLOUD.offset), limit: '24' });
     try {
       const response = await fetch('https://api.modrinth.com/v2/search?' + params);
@@ -401,6 +402,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
     const ents = await ZR.entries(buf);
     const { entries, modInfo } = buildEntries(ents);
     if (!entries.length) throw new Error('包内没有原版材质内容,无法投稿');
+    if (!countVanillaTextures(entries)) throw new Error('包内没有可混搭的原版材质贴图,无法作为材质包投稿');
     const keep = new Set(['pack.mcmeta', 'pack.png']);
     for (const e of entries) for (const ff of e.files) keep.add(ff.name);
     const outFiles = [];

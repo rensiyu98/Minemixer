@@ -22,8 +22,10 @@ async function importZipBuffer(buf, meta) {
     const msum = modInfo.modNs.slice(0, 3).map(m => m.ns + '×' + m.count).join(', ');
     throw new Error('未检测到原版材质覆盖 —— 这是整合包/mod 专用资源(' + msum + '),不适合材质混搭,已拒收');
   }
+  const textureCount = countVanillaTextures(entries);
+  if (!textureCount) throw new Error('这个资源包没有可混搭的原版材质贴图（PNG/TGA），可能只包含音效、语言或配置');
   const id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const pack = { id, name: meta.name || mcmetaName(mc) || '未命名包', author: meta.author || '', license: meta.license || '未知(本地导入,注意授权)', source: meta.source || 'local', importedAt: Date.now(), fileCount: entries.length, modInfo, engineVersion: ENGINE_V };
+  const pack = { id, name: meta.name || mcmetaName(mc) || '未命名包', author: meta.author || '', license: meta.license || '未知(本地导入,注意授权)', source: meta.source || 'local', importedAt: Date.now(), fileCount: entries.length, textureCount, modInfo, engineVersion: ENGINE_V };
   await DB.putPack(pack, buf, entries);
   STATE.zipCache.set(id, buf);
   await reloadPacks();
@@ -109,7 +111,7 @@ function renderHome() {
     const el = document.createElement('div'); el.className = 'hpack';
     const licOk = /MIT|Apache|CC0|CC-BY|LGPL|MPL|GPL/.test(p.license);
     el.innerHTML = `<h3>${p.name}</h3>
-      <div class="meta"><span class="lic ${licOk ? 'ok' : ''}">${p.license.slice(0, 20)}</span><span>${p.fileCount} 条目 · ${(p.size / 1048576).toFixed(1)}MB</span></div>
+      <div class="meta"><span class="lic ${licOk ? 'ok' : ''}">${p.license.slice(0, 20)}</span><span>${p.textureCount != null ? p.textureCount + ' 项贴图 · ' : ''}${p.fileCount} 条目 · ${(p.size / 1048576).toFixed(1)}MB</span></div>
       ${p.score != null ? `<div class="meta" style="color:${p.score >= 85 ? 'var(--acc)' : 'var(--acc2)'};font-size:11px">原版覆盖 ${p.score}% · ${p.kind || ''}</div>` : ''}
       ${p.modInfo && p.modInfo.modNs.length ? `<div class="meta" style="color:var(--txt3);font-size:10.5px">已过滤 mod 资源:${p.modInfo.modNs.slice(0, 3).map(m => m.ns + '×' + m.count).join('、')}${p.modInfo.modNs.length > 3 ? '…' : ''}</div>` : ''}
       <div class="ops"><button class="hbtn chk">🔍 检测完整度</button><button class="hbtn rm">✕ 移除</button></div>`;

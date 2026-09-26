@@ -100,6 +100,9 @@ function parsePath(p){
 const CAT_LABEL = { block: '方块', item: '物品', entity: '实体', gui: '界面', particle: '粒子', env: '环境',
   model: '模型', blockstate: '方块状态', cem: '实体模型', cit: '物品皮肤', ofanim: 'OF动画', particledef: '粒子定义', misc: '其他' };
 const DEPS = { cem: 'OptiFine / EMF(实体模型前置)', cit: 'OptiFine / CIT Resewn', ofanim: 'OptiFine' };
+function countVanillaTextures(entries) {
+  return entries.filter(e => e.files.some(f => /(?:^|\/)assets\/minecraft\/(?:textures|optifine)\/.*\.(?:png|tga)$/i.test(f.name))).length;
+}
 
 /* 把一个包的全部文件列表 → 条目列表(贴图中心模型:模型/方块状态吸附到同名贴图) */
 function buildEntries(files /* [{name,size,method,localOff}] */){
