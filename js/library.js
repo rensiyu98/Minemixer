@@ -148,7 +148,7 @@ function renderHome() {
     const caps = p.capabilities || {};
     const fmt = p.packFormat == null ? '版本未知' : `格式 ${p.minFormat == null ? p.packFormat : p.minFormat}${p.maxFormat != null && p.maxFormat !== p.minFormat ? '–' + p.maxFormat : ''}`;
     el.innerHTML = `<h3>${p.name}</h3>
-      <div class="meta"><span class="lic ${licOk ? 'ok' : ''}">${p.license.slice(0, 20)}</span><span>${p.textureCount != null ? p.textureCount + ' 项贴图 · ' : ''}${p.fileCount} 条目 · ${(p.size / 1048576).toFixed(1)}MB</span></div>
+      <div class="meta"><span class="lic ${licOk ? 'ok' : ''}">${p.license.slice(0, 20)}</span><span>${p.textureCount ? p.textureCount + ' 项贴图 · ' : (p.entryCount ? p.entryCount + ' 项技术资源 · ' : '')}${p.fileCount} 个文件 · ${(p.size / 1048576).toFixed(1)}MB</span></div>
       <div class="pack-health"><span class="badge ok">Java</span><span class="badge ${p.packFormat == null ? 'warn' : ''}">${fmt}</span>${caps.models ? `<span class="badge">模型 ${caps.models}</span>` : ''}${caps.sounds ? `<span class="badge">声音 ${caps.sounds}</span>` : ''}${caps.fonts ? `<span class="badge">字体 ${caps.fonts}</span>` : ''}${caps.optifine ? `<span class="badge warn">OptiFine ${caps.optifine}</span>` : ''}${caps.cit ? `<span class="badge warn">CIT ${caps.cit}</span>` : ''}</div>
       ${p.score != null ? `<div class="meta" style="color:${p.score >= 85 ? 'var(--acc)' : 'var(--acc2)'};font-size:11px">原版覆盖 ${p.score}% · ${p.kind || ''}</div>` : ''}
       ${p.modInfo && p.modInfo.modNs.length ? `<div class="meta" style="color:var(--txt3);font-size:10.5px">已过滤 mod 资源:${p.modInfo.modNs.slice(0, 3).map(m => m.ns + '×' + m.count).join('、')}${p.modInfo.modNs.length > 3 ? '…' : ''}</div>` : ''}
@@ -176,15 +176,15 @@ function isTechCat(c) { return c === 'model' || c === 'blockstate' || c === 'cem
 function allEntries() { let l = []; for (const es of STATE.entriesByPack.values()) l = l.concat(es); return l; }
 function renderRail() {
   const rail = $('#rail'); rail.innerHTML = '';
-  const counts = new Map(); let mixTotal = 0, techTotal = 0;
+  const counts = new Map(); let allTotal = 0, techTotal = 0;
   for (const e of allEntries()) {
     const c = CAT_MAP[e.cat] || 'other';
-    if (c === 'model') { techTotal++; continue; }   // 技术/模型类单独计,不混入贴图大类
-    counts.set(c, (counts.get(c) || 0) + 1); mixTotal++;
+    if (c === 'model') techTotal++;
+    counts.set(c, (counts.get(c) || 0) + 1); allTotal++;
   }
   for (const c of CATS) {
     let n;
-    if (c.id === 'all') n = mixTotal;
+    if (c.id === 'all') n = allTotal;
     else if (c.id === 'model') n = techTotal;
     else n = counts.get(c.id) || 0;
     const el = document.createElement('div');
@@ -213,7 +213,7 @@ function renderCenter() {
     if (!p) { WS.setPackId = null; renderCenter(); return; }
     const es = (STATE.entriesByPack.get(p.id) || []).filter(e => {
       const c = CAT_MAP[e.cat] || 'other';
-      if (WS.cat === 'all') return c !== 'model';
+      if (WS.cat === 'all') return true;
       if (WS.cat === 'model') return c === 'model';
       return c === WS.cat;
     });
@@ -225,7 +225,7 @@ function renderCenter() {
   // 小类墙:每个包一张卡(同作者/同套装 = 一个小类)
   const mixFilter = e => {
     const c = CAT_MAP[e.cat] || 'other';
-    if (WS.cat === 'all') return c !== 'model';              // 「全部」只显贴图条目
+    if (WS.cat === 'all') return true;                       // 「全部」包含贴图、模型与技术资源
     if (WS.cat === 'model') return c === 'model';            // 模型大类=技术文件集中地
     return c === WS.cat;                                     // 其他大类本就只有贴图
   };
