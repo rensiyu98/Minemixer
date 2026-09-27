@@ -10,22 +10,55 @@ const CAT_MAP = { block: 'block', item: 'item', entity: 'entity', gui: 'gui', pa
   model: 'model', blockstate: 'model', cem: 'model', particledef: 'particle', cit: 'other', ofanim: 'other', misc: 'other' };
 const PAGE = 240;
 
+function packCapabilities(ents) {
+  const names = ents.map(e => e.name.toLowerCase());
+  const count = re => names.filter(n => re.test(n)).length;
+  return {
+    textures: count(/assets\/[^/]+\/textures\/.*\.(png|tga)$/),
+    models: count(/assets\/[^/]+\/(models|blockstates)\/.*\.json$/),
+    sounds: count(/assets\/[^/]+\/(?:sounds\/.*\.ogg|sounds\.json)$/),
+    fonts: count(/assets\/[^/]+\/font\/.*\.json$/),
+    animations: count(/\.png\.mcmeta$|\/animations?\/.*\.json$/),
+    optifine: count(/assets\/[^/]+\/optifine\//),
+    cit: count(/assets\/[^/]+\/(optifine\/cit|citresewn\/cit)\//),
+  };
+}
+function readJsonEntry(buf, ents, name) {
+  const e = ents.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (!e) return null;
+  try { return JSON.parse(new TextDecoder().decode(ZR.read(buf, e))); } catch (_) { return null; }
+}
+function inspectPack(buf, ents) {
+  const manifest = readJsonEntry(buf, ents, 'manifest.json');
+  const mc = readJsonEntry(buf, ents, 'pack.mcmeta');
+  const hasJava = ents.some(e => /(?:^|\/)assets\/[^/]+\//i.test(e.name));
+  const hasBedrock = !!manifest || ents.some(e => /(?:^|\/)(textures|sounds|ui)\//i.test(e.name) && !/(?:^|\/)assets\//i.test(e.name));
+  const edition = hasJava && hasBedrock ? 'mixed' : hasJava || mc ? 'java' : hasBedrock ? 'bedrock' : 'unknown';
+  const pack = mc && mc.pack || {};
+  const pf = Number.isFinite(+pack.pack_format) ? +pack.pack_format : null;
+  const sf = pack.supported_formats;
+  let minFormat = pf, maxFormat = pf;
+  if (Array.isArray(sf)) { minFormat = +sf[0]; maxFormat = +sf[1]; }
+  else if (sf && typeof sf === 'object') { minFormat = +(sf.min_inclusive ?? pf); maxFormat = +(sf.max_inclusive ?? pf); }
+  return { mc, manifest, edition, packFormat: pf, minFormat: Number.isFinite(minFormat) ? minFormat : null, maxFormat: Number.isFinite(maxFormat) ? maxFormat : null, capabilities: packCapabilities(ents) };
+}
+
 /* ---------- 导入(与之前一致) ---------- */
 function mcmetaName(m) { try { return (m.pack.description || '').split('\n')[0].slice(0, 40); } catch (e) { return ''; } }
 async function importZipBuffer(buf, meta) {
   const ents = await ZR.entries(buf);
-  let mc = {};
-  const mE = ents.find(e => e.name === 'pack.mcmeta');
-  if (mE) { try { mc = JSON.parse(new TextDecoder().decode(ZR.read(buf, mE))); } catch (e) {} }
+  const scan = inspectPack(buf, ents), mc = scan.mc || {};
+  if (scan.edition === 'bedrock') throw new Error('检测到基岩版资源包（manifest.json）。当前混搭引擎只支持 Java 版，已阻止错误导入');
+  if (scan.edition === 'unknown') throw new Error('无法识别资源包平台：未找到 Java 版 assets/ 或基岩版 manifest.json');
   const parsed = buildEntries(ents);
-  const entries = selectVanillaTextureEntries(parsed.entries), modInfo = parsed.modInfo;
-  if (!entries.length) {
+  const entries = parsed.entries, textureEntries = selectVanillaTextureEntries(entries), modInfo = parsed.modInfo;
+  if (!textureEntries.length && !entries.length) {
     const msum = modInfo.modNs.slice(0, 3).map(m => m.ns + '×' + m.count).join(', ');
     throw new Error('没有找到可混搭的原版贴图（assets/minecraft/textures/ 下的 PNG/TGA）' + (msum ? '；检测到模组命名空间：' + msum : ''));
   }
-  const textureCount = entries.length;
+  const textureCount = textureEntries.length;
   const id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const pack = { id, name: meta.name || mcmetaName(mc) || '未命名包', author: meta.author || '', license: meta.license || '未知(本地导入,注意授权)', source: meta.source || 'local', importedAt: Date.now(), fileCount: entries.length, textureCount, modInfo, engineVersion: ENGINE_V };
+  const pack = { id, name: meta.name || mcmetaName(mc) || '未命名包', author: meta.author || '', license: meta.license || '未知（仅限个人使用，导出前确认授权）', source: meta.source || 'local', importedAt: Date.now(), fileCount: ents.length, entryCount: entries.length, textureCount, modInfo, engineVersion: ENGINE_V, edition: scan.edition, packFormat: scan.packFormat, minFormat: scan.minFormat, maxFormat: scan.maxFormat, capabilities: scan.capabilities };
   await DB.putPack(pack, buf, entries);
   STATE.zipCache.set(id, buf);
   await reloadPacks();
@@ -35,7 +68,7 @@ async function importLocalFiles(files) {
   for (const f of files) {
     try {
       const pack = await importZipBuffer(await f.arrayBuffer(), { name: f.name.replace(/\.zip$/i, '') });
-      toast(`✓ 已导入「${pack.name}」(${pack.fileCount} 个原版条目${pack.modInfo.modNs.length ? ',已过滤 mod 资源 ' + pack.modInfo.modNs.reduce((s, m) => s + m.count, 0) + ' 个' : ''})`);
+      toast(`✓ 已导入「${pack.name}」（Java · ${pack.textureCount} 张贴图 · ${pack.entryCount} 个资源条目）`);
       autoCheck(pack);
     } catch (e) { toast(`✕ 导入 ${f.name} 失败:${e.message}`, true); }
   }
@@ -114,8 +147,11 @@ function renderHome() {
   for (const p of STATE.packs) {
     const el = document.createElement('div'); el.className = 'hpack';
     const licOk = /MIT|Apache|CC0|CC-BY|LGPL|MPL|GPL/.test(p.license);
+    const caps = p.capabilities || {};
+    const fmt = p.packFormat == null ? '版本未知' : `格式 ${p.minFormat == null ? p.packFormat : p.minFormat}${p.maxFormat != null && p.maxFormat !== p.minFormat ? '–' + p.maxFormat : ''}`;
     el.innerHTML = `<h3>${p.name}</h3>
       <div class="meta"><span class="lic ${licOk ? 'ok' : ''}">${p.license.slice(0, 20)}</span><span>${p.textureCount != null ? p.textureCount + ' 项贴图 · ' : ''}${p.fileCount} 条目 · ${(p.size / 1048576).toFixed(1)}MB</span></div>
+      <div class="pack-health"><span class="badge ok">Java</span><span class="badge ${p.packFormat == null ? 'warn' : ''}">${fmt}</span>${caps.models ? `<span class="badge">模型 ${caps.models}</span>` : ''}${caps.sounds ? `<span class="badge">声音 ${caps.sounds}</span>` : ''}${caps.fonts ? `<span class="badge">字体 ${caps.fonts}</span>` : ''}${caps.optifine ? `<span class="badge warn">OptiFine ${caps.optifine}</span>` : ''}${caps.cit ? `<span class="badge warn">CIT ${caps.cit}</span>` : ''}</div>
       ${p.score != null ? `<div class="meta" style="color:${p.score >= 85 ? 'var(--acc)' : 'var(--acc2)'};font-size:11px">原版覆盖 ${p.score}% · ${p.kind || ''}</div>` : ''}
       ${p.modInfo && p.modInfo.modNs.length ? `<div class="meta" style="color:var(--txt3);font-size:10.5px">已过滤 mod 资源:${p.modInfo.modNs.slice(0, 3).map(m => m.ns + '×' + m.count).join('、')}${p.modInfo.modNs.length > 3 ? '…' : ''}</div>` : ''}
       <div class="ops"><button class="hbtn chk">🔍 检测完整度</button><button class="hbtn rm">✕ 移除</button></div>`;

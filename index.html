@@ -168,6 +168,9 @@ select.hbtn{appearance:none}
 .cloud-card .favorite.on{color:#ffd166;border-color:#8c6a30}
 .cloud-card .desc{font-size:11.5px;color:var(--txt3);line-height:1.4;min-height:32px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cloud-card .icon{width:40px;height:40px;object-fit:cover;image-rendering:pixelated;border-radius:8px;float:right;margin-left:8px}
+.pack-health{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border:1px solid var(--line2);border-radius:999px;color:var(--txt2);font-size:10.5px}.badge.ok{color:var(--acc);border-color:#2a6b53}.badge.warn{color:#ffcf6b;border-color:#755d2b}.badge.bad{color:var(--warn);border-color:#743442}
+.project-tools{display:flex;gap:7px;flex-wrap:wrap}.project-note{font-size:10.5px;color:var(--txt3);margin-top:5px}.compat-panel{padding:8px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--txt2)}.compat-panel strong{color:var(--acc)}
+.preview3d{width:150px;height:150px;display:grid;place-items:center;perspective:420px;margin:auto}.cube3d{width:88px;height:88px;position:relative;transform-style:preserve-3d;transform:rotateX(-22deg) rotateY(35deg);animation:cubeTurn 12s linear infinite}.cube3d span{position:absolute;inset:0;background:var(--tex) center/cover;image-rendering:pixelated;border:1px solid rgba(255,255,255,.18)}.cube3d .front{transform:translateZ(44px)}.cube3d .back{transform:rotateY(180deg) translateZ(44px)}.cube3d .right{transform:rotateY(90deg) translateZ(44px)}.cube3d .left{transform:rotateY(-90deg) translateZ(44px)}.cube3d .top{transform:rotateX(90deg) translateZ(44px)}.cube3d .bottom{transform:rotateX(-90deg) translateZ(44px)}@keyframes cubeTurn{to{transform:rotateX(-22deg) rotateY(395deg)}}@media(prefers-reduced-motion:reduce){.cube3d{animation:none}}
 @media(max-width:900px){
   body{height:auto;min-height:100vh;min-height:100dvh;overflow:auto}
   #viewWork.show{min-height:100vh;min-height:100dvh}
@@ -178,23 +181,23 @@ select.hbtn{appearance:none}
   #rail,#stage{max-height:58vh}
 }
 @media(max-width:600px){
-  body{font-size:14px;-webkit-text-size-adjust:100%;background-position:center top}
+  html,body{max-width:100%;overflow-x:hidden}body{font-size:14px;-webkit-text-size-adjust:100%;background-position:center top}
   .hbtn{min-height:44px;padding:10px 13px;touch-action:manipulation}
   #viewHome{padding:calc(12px + env(safe-area-inset-top)) 12px calc(34px + env(safe-area-inset-bottom));align-items:stretch}
   .hero,.homebtns,.editor-steps,.dropzone,#homePacks,#onlineLog,.advanced-tools{width:100%}
   .hero{padding:22px 14px;margin-bottom:18px;border-radius:17px}
-  .hero h1{font-size:25px!important;line-height:1.2}
+  .hero h1{font-size:25px!important;line-height:1.2;overflow-wrap:anywhere}
   #viewHome .sub{font-size:13px;margin-top:8px}
   .editor-steps{display:grid;grid-template-columns:1fr;margin:0 0 18px;gap:7px}
   .editor-steps span{text-align:left;padding:9px 12px}
-  .homebtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+  .homebtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:18px}
   .homebtns .hbtn{width:100%;font-size:12px;padding:10px 7px}
   .homebtns .primary{grid-column:1/-1}
   .dropzone{padding:18px 12px;margin-bottom:22px;font-size:12px}
   #homePacks,#cloudList{grid-template-columns:1fr!important;gap:10px!important}
   .hpack{padding:13px}.hpack .ops{flex-wrap:wrap}.hpack .ops .hbtn{min-height:40px;flex:1}
-  .cloud-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-  .cloud-tabs .hbtn{padding:8px 4px;font-size:11.5px}
+  .cloud-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .cloud-tabs .hbtn{min-width:0;padding:8px 4px;font-size:11.5px;white-space:normal}
   .cloud-head{align-items:stretch}.cloud-head .hint{width:100%}
   .cloud-controls{margin-left:0;width:100%;display:grid;grid-template-columns:1fr 1fr}
   .cloud-controls input{grid-column:1/-1;width:100%;min-width:0}
@@ -270,7 +273,7 @@ select.hbtn{appearance:none}
     <div style="text-align:center;margin-top:10px"><button class="hbtn" id="cloudMore" style="display:none">加载更多</button></div>
   </div>
   <div id="onlineLog"></div>
-  <details class="advanced-tools"><summary>高级选项</summary><div class="tools"><button class="hbtn" id="btnSubmit" title="整理自己的材质包并生成投稿文件">📤 投稿材质包</button><button class="hbtn" id="btnRebuild">🔄 重建本地贴图索引</button><button class="hbtn" id="btnResetDb" title="清空本机数据库并重新在线导入，用于数据错位急救">🧹 重置数据库</button></div></details>
+  <details class="advanced-tools"><summary>高级选项</summary><div class="tools"><button class="hbtn" id="btnSubmit" title="整理自己的材质包并生成投稿文件">📤 投稿材质包</button><button class="hbtn" id="btnProjectSave">💾 保存工程</button><button class="hbtn" id="btnProjectOpen">📂 恢复工程</button><button class="hbtn" id="btnProjectShare">🔗 分享配方</button><button class="hbtn" id="btnRebuild">🔄 重建资源索引</button><button class="hbtn" id="btnResetDb" title="清空本机数据库并重新在线导入，用于数据错位急救">🧹 重置数据库</button></div><div class="project-note">工程会自动保存在当前浏览器；工程文件和分享链接只记录配方，不包含受版权保护的材质文件。</div></details>
 </div>
 
 <!-- ================= 工作界面 ================= -->
@@ -320,6 +323,7 @@ select.hbtn{appearance:none}
         <div style="font-size:11px;color:var(--txt3);margin-bottom:4px">可选基底材质包（只补未选择的原版贴图）</div>
         <select id="baseSel" class="hbtn" style="width:100%;font-size:12px"></select>
       </div>
+      <div id="compatPanel" class="compat-panel">选择条目后显示冲突、依赖与版本检查</div>
       <div id="wbList"></div>
       <div class="wbfoot">
         <button class="hbtn" id="btnClear2">清空</button>
@@ -349,6 +353,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
 <script src="js/store.js"></script>
 <script src="js/library.js"></script>
 <script src="js/workbench.js"></script>
+<script src="js/project.js"></script>
 <script>
 'use strict';
 (async function boot(){
@@ -359,7 +364,10 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
   $('#btnGoWork').onclick = goWork;
   $('#btnGoHome').onclick = goHome;
   // ---- 导入 ----
-  $('#btnLocal').onclick = () => $('#fileInput').click();
+  $('#btnLocal').onclick = () => {
+    const ok = confirm('版权与许可提醒\n\n请只导入你已购买、获授权或许可证允许使用的材质包。MineMixer 在浏览器本地处理文件，不会替你取得转载、改编或公开分发权。导出的混搭包默认仅限个人使用；公开发布前必须逐一核对原作者许可并保留署名。\n\n确认你理解并继续？');
+    if (ok) $('#fileInput').click();
+  };
   $('#fileInput').onchange = e => { importLocalFiles([...e.target.files]); e.target.value=''; };
   addEventListener('dragover', e => e.preventDefault());
   addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files.length) { importLocalFiles([...e.dataTransfer.files]); goHome(); } });
@@ -532,10 +540,10 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
     const dropped = [];
     for (const p of packs) {
       const zip = await DB.packZip(p.id); if (!zip) continue;
-      const parsed = buildEntries(await ZR.entries(zip));
-      const entries = selectVanillaTextureEntries(parsed.entries), modInfo = parsed.modInfo;
+      const ents = await ZR.entries(zip), scan = inspectPack(zip, ents), parsed = buildEntries(ents);
+      const entries = parsed.entries, textureCount = selectVanillaTextureEntries(entries).length, modInfo = parsed.modInfo;
       if (!entries.length) dropped.push(p.name);
-      await DB.replacePack({ ...p, zip: undefined, engineVersion: ENGINE_V, fileCount: entries.length, textureCount: entries.length, modInfo }, zip, entries);
+      await DB.replacePack({ ...p, zip: undefined, engineVersion: ENGINE_V, fileCount: ents.length, entryCount: entries.length, textureCount, modInfo, edition: scan.edition, packFormat: scan.packFormat, minFormat: scan.minFormat, maxFormat: scan.maxFormat, capabilities: scan.capabilities }, zip, entries);
       STATE.zipCache.set(p.id, zip);
     }
     STATE.entriesByPack.clear(); STATE.thumbCache.clear(); STATE.sel.clear();
@@ -554,7 +562,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
   $('#btnPack2').onclick = exportPack; $('#btnPack2b').onclick = exportPack;
   $('#btnClear2').onclick = () => { STATE.sel.clear(); saveSel(); renderWorkbench(); renderCenter(); toast('已清空工作台'); };
   $('#verSel2').value = localStorage.getItem('mm2_ver') || '15';
-  $('#verSel2').onchange = e => localStorage.setItem('mm2_ver', e.target.value);
+  $('#verSel2').onchange = e => { localStorage.setItem('mm2_ver', e.target.value); renderCompatibility(); };
   window.addEventListener('error', ev => { const d=$('#dbg'); d.style.color='#f88'; d.textContent = 'ERR: ' + ev.message + ' @' + (ev.filename||'').split('/').pop() + ':' + ev.lineno; });
   await reloadPacks();
   // 引擎升级自动重建
@@ -566,6 +574,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
   $('#onlineLog').classList.remove('show'); $('#onlineLog').innerHTML = '';
   loadSel();
   renderWorkbench();
+  initProjectTools();
   $('#dbg').textContent = 'engine v' + ENGINE_V + ' · packs ' + STATE.packs.length + ' · entries ' + [...STATE.entriesByPack.values()].reduce((s, a) => s + a.length, 0);
 })();
 </script>

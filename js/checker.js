@@ -15,7 +15,7 @@ function vanillaIndex() {
   return m;
 }
 async function checkPack(pack, entries, zip) {
-  const R = { pack: pack.name, struct: [], refs: [], cover: [], score: null, warn: 0, info: 0 };
+  const R = { pack: pack.name, struct: [], refs: [], cover: [], compat: [], score: null, warn: 0, info: 0 };
   const ents = await ZR.entries(zip);
   const paths = new Set(ents.map(x => x.name));   // 用原始 zip 全路径(含 pack.mcmeta/pack.png)
   // ---- 1. 结构 ----
@@ -28,6 +28,12 @@ async function checkPack(pack, entries, zip) {
     } catch (e) { R.struct.push({ ok: false, t: 'pack.mcmeta 不是合法 JSON' }); R.warn++; }
   } else R.warn++;
   R.struct.push({ ok: paths.has('pack.png'), t: paths.has('pack.png') ? 'pack.png 封面存在' : '无 pack.png 封面(可选,不影响使用)', soft: true });
+  const caps = packCapabilities(ents);
+  R.compat.push({ ok: pack.edition !== 'bedrock', t: `平台：${pack.edition === 'mixed' ? 'Java/基岩混合结构（谨慎）' : pack.edition === 'bedrock' ? '基岩版（不可加入 Java 工程）' : 'Java 版'}` });
+  R.compat.push({ ok: pack.packFormat != null, soft: pack.packFormat == null, t: pack.packFormat == null ? '未声明 pack_format，无法可靠判断游戏版本' : `资源格式：${pack.minFormat ?? pack.packFormat}${pack.maxFormat != null && pack.maxFormat !== pack.minFormat ? '–' + pack.maxFormat : ''}` });
+  const featureText = [['贴图',caps.textures],['模型/状态',caps.models],['声音',caps.sounds],['字体',caps.fonts],['动画',caps.animations],['OptiFine',caps.optifine],['CIT',caps.cit]].filter(x => x[1]).map(x => x[0] + '×' + x[1]).join(' · ');
+  R.compat.push({ ok: true, soft: true, t: '资源能力：' + (featureText || '未识别') });
+  if (caps.optifine || caps.cit) R.compat.push({ ok: true, soft: true, t: '检测到扩展资源，游戏需要 OptiFine、CIT Resewn、EMF/ETF 等相应前置才能生效' });
   // ---- 2. 内部引用一致(blockstate→model→texture,读 JSON 内容,上限 2000 个防卡) ----
   const resolveModel = (ns, rel) => `assets/${ns}/models/${rel.replace(/^\w+\//, m => m)}.json`;
   let jsonChecked = 0, fallbackModel = 0, fallbackTex = 0, missingTex = 0;
@@ -90,6 +96,7 @@ function showCheckReport(R) {
     <div style="font-size:14px;margin-bottom:12px;color:${R.warn ? 'var(--warn)' : 'var(--acc)'}"><b>${R.verdict}</b></div>
     <div style="font-size:13px;color:var(--txt2);margin:8px 0 4px">① 结构</div>${R.struct.map(r => row(r)).join('')}
     <div style="font-size:13px;color:var(--txt2);margin:12px 0 4px">② 内部引用</div>${R.refs.map(r => row(r)).join('')}
-    <div style="font-size:13px;color:var(--txt2);margin:12px 0 6px">③ 原版覆盖率(基准:Faithful 全量清单 ${VANILLA.count} 项)</div><div>${cov}</div>`;
+    <div style="font-size:13px;color:var(--txt2);margin:12px 0 4px">③ 平台、版本与扩展能力</div>${R.compat.map(r => row(r)).join('')}
+    <div style="font-size:13px;color:var(--txt2);margin:12px 0 6px">④ 原版覆盖率(基准:Faithful 全量清单 ${VANILLA.count} 项)</div><div>${cov}</div>`;
   ov.classList.add('show');
 }

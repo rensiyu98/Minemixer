@@ -76,6 +76,35 @@ function renderWorkbench() {
       STATE.packs.filter(p => p.textureCount > 0).map(p => `<option value="${p.id}">${p.name}（${p.textureCount} 项贴图）</option>`).join('');
     if (bs.dataset.sig !== html) { bs.dataset.sig = html; bs.innerHTML = html; bs.value = cur; }
   }
+  renderCompatibility();
+}
+function selectionAudit() {
+  const target = +($('#verSel2')?.value || 15), owners = new Map(), conflicts = [], deps = new Set(), incompatible = [], unknownLicense = [];
+  for (const [, v] of STATE.sel) {
+    const p = packById(v.packId), e = v.entry;
+    if (!p) continue;
+    if (p.packFormat != null && ((p.minFormat != null && target < p.minFormat) || (p.maxFormat != null && target > p.maxFormat))) incompatible.push(p.name);
+    if (!p.license || /未知|unknown/i.test(p.license)) unknownLicense.push(p.name);
+    if (e.deps) deps.add(e.deps);
+    for (const f of e.files) {
+      const old = owners.get(f.name);
+      if (old && old.packId !== v.packId) conflicts.push({ path: f.name, a: old.name, b: p.name });
+      else owners.set(f.name, { packId: v.packId, name: p.name });
+      if (/\/optifine\/cit\/|\/citresewn\/cit\//i.test(f.name)) deps.add('OptiFine 或 CIT Resewn');
+      if (/\/optifine\//i.test(f.name)) deps.add('OptiFine 或兼容模组');
+    }
+  }
+  return { target, conflicts, deps: [...deps], incompatible: [...new Set(incompatible)], unknownLicense: [...new Set(unknownLicense)] };
+}
+function renderCompatibility() {
+  const box = $('#compatPanel'); if (!box) return;
+  if (!STATE.sel.size) { box.textContent = '选择条目后显示冲突、依赖与版本检查'; return; }
+  const a = selectionAudit(), bits = [`<strong>${STATE.sel.size}</strong> 项`];
+  bits.push(a.conflicts.length ? `<span class="badge bad">冲突 ${a.conflicts.length}</span>` : '<span class="badge ok">无文件冲突</span>');
+  if (a.deps.length) bits.push(`<span class="badge warn" title="${a.deps.join('、')}">前置 ${a.deps.length}</span>`);
+  if (a.incompatible.length) bits.push(`<span class="badge bad" title="${a.incompatible.join('、')}">版本风险 ${a.incompatible.length}</span>`); else bits.push('<span class="badge ok">目标版本通过</span>');
+  if (a.unknownLicense.length) bits.push(`<span class="badge warn" title="${a.unknownLicense.join('、')}">授权待确认 ${a.unknownLicense.length}</span>`);
+  box.innerHTML = `<div class="pack-health">${bits.join('')}</div>${a.deps.length ? `需要：${a.deps.join('、')}` : '模型、动画描述和所选技术文件会随条目一起导出。'}`;
 }
 /* 拖放目标:支持整小类(set)与单条目(entry) */
 (function () {
@@ -108,8 +137,9 @@ async function openDetail(entry) {
   const box = $('#detailBody');
   const zh = entry.zh ? `(${entry.zh})` : '';
   const img = await makeThumb2(entry, 220);
+  const cube = img && entry.cat === 'block' ? `<div class="preview3d" aria-label="方块旋转预览"><div class="cube3d" style="--tex:url(${img})">${['front','back','right','left','top','bottom'].map(x => `<span class="${x}"></span>`).join('')}</div></div>` : '';
   box.innerHTML = `
-    <div class="dmain"><div class="dimg">${img ? `<img src="${img}">` : '<div class="dnoimg">📦 ' + (entry._err || '非贴图条目') + '<br><span style="font-size:10px">' + entry.files.slice(0, 6).map(f => f.name.split('/').pop()).join('<br>') + (entry.files.length > 6 ? '<br>…共' + entry.files.length + '个文件' : '') + '</span></div>'}</div>
+    <div class="dmain"><div class="dimg">${cube || (img ? `<img src="${img}">` : '<div class="dnoimg">📦 ' + (entry._err || '非贴图条目') + '<br><span style="font-size:10px">' + entry.files.slice(0, 6).map(f => f.name.split('/').pop()).join('<br>') + (entry.files.length > 6 ? '<br>…共' + entry.files.length + '个文件' : '') + '</span></div>')}</div>
     <div class="dinfo">
       <h3>${entry.base} ${zh}</h3>
       <p class="dpath">${entry.path}</p>
@@ -141,6 +171,12 @@ $('#detailOv').onclick = e => { if (e.target.id === 'detailOv') e.target.classLi
 /* ---------- 导出选中贴图；未覆盖的贴图由游戏原版回退 ---------- */
 async function exportPack() {
   if (!STATE.sel.size) return;
+  const audit = selectionAudit();
+  const warnings = [];
+  if (audit.conflicts.length) warnings.push(`${audit.conflicts.length} 个文件路径冲突（工作台中较早选择的版本优先）`);
+  if (audit.incompatible.length) warnings.push(`目标格式 ${audit.target} 超出 ${audit.incompatible.join('、')} 声明的兼容范围`);
+  if (audit.unknownLicense.length) warnings.push(`${audit.unknownLicense.join('、')} 的许可证未知，不应公开分发`);
+  if (warnings.length && !confirm('导出前检查发现：\n\n• ' + warnings.join('\n• ') + '\n\n仍要生成仅供测试的资源包吗？')) return;
   const files = [];
   const TE = new TextEncoder();
   const credit = new Map();
@@ -197,6 +233,12 @@ async function exportPack() {
     supported_formats: { min_inclusive: pf, max_inclusive: 999 },
     description: desc,
   } }, null, 2)) });
+  files.push({ name: 'MineMixer-CREDITS.txt', data: TE.encode([
+    'MineMixer 混搭资源包', '生成时间：' + new Date().toISOString(), '目标 pack_format：' + pf,
+    '来源与许可证：', ...[...credit.entries()].map(([n, l]) => `- ${n}: ${l}`), '',
+    audit.deps.length ? '运行前置：' + audit.deps.join('、') : '运行前置：未检测到',
+    '注意：本文件不代表原作者授权。公开发布前请检查每个来源的许可证与署名要求。'
+  ].join('\n')) });
   const blob = zipStore(files);
   const u = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = u; a.download = 'MineMixer_v2.zip'; document.body.appendChild(a); a.click();

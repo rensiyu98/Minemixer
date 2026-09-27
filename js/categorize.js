@@ -1,6 +1,6 @@
 'use strict';
 /* ============ 路径解析 / 自动分类 / 文件配对 ============ */
-const ENGINE_V = 6;   // 分类引擎版本(改动解析逻辑时+1;启动时自动重建旧索引)
+const ENGINE_V = 7;   // 分类引擎版本(改动解析逻辑时+1;启动时自动重建旧索引)
 /* 分类体系(基于真实资源包解剖):
    block方块 item物品 entity实体 gui界面 particle粒子 env环境 model模型 blockstate方块状态
    cem实体模型动画 cit物品皮肤 ofanim动画贴图 particledef粒子定义 misc其他 */
@@ -13,6 +13,7 @@ const CATS = [
   { id: 'gui',     name: '界面' },
   { id: 'particle',name: '粒子' },
   { id: 'env',     name: '环境' },
+  { id: 'model',   name: '模型与状态' },
   { id: 'other',   name: '其他' },
 ];
 
