@@ -343,17 +343,17 @@ const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 function toast(msg, err){const t=$('#toast');t.textContent=msg;t.className='show'+(err?' err':'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='',3000);}
 function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
 </script>
-<script src="js/lib/pako_inflate.min.js"></script>
-<script src="js/zip.js"></script>
-<script src="js/lang_zh.js"></script>
-<script src="js/categorize.js"></script>
-<script src="js/vanilla_manifest.js"></script>
-<script src="js/checker.js"></script>
-<script src="js/cloud-library.js"></script>
-<script src="js/store.js"></script>
-<script src="js/library.js"></script>
-<script src="js/workbench.js"></script>
-<script src="js/project.js"></script>
+<script src="js/lib/pako_inflate.min.js?v=7"></script>
+<script src="js/zip.js?v=7"></script>
+<script src="js/lang_zh.js?v=7"></script>
+<script src="js/categorize.js?v=7"></script>
+<script src="js/vanilla_manifest.js?v=7"></script>
+<script src="js/checker.js?v=7"></script>
+<script src="js/cloud-library.js?v=7"></script>
+<script src="js/store.js?v=7"></script>
+<script src="js/library.js?v=7"></script>
+<script src="js/workbench.js?v=7"></script>
+<script src="js/project.js?v=7"></script>
 <script>
 'use strict';
 (async function boot(){

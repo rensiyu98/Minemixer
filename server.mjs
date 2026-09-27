@@ -42,7 +42,9 @@ createServer(async (req, res) => {
     const relative = decodeURIComponent(requestUrl.pathname) === "/" ? "index.html" : decodeURIComponent(requestUrl.pathname).replace(/^\/+/, "");
     const file = normalize(join(root, relative));
     if ((relative !== "index.html" && !relative.startsWith("js/")) || !file.startsWith(root) || !existsSync(file) || !statSync(file).isFile()) return reply(res, 404, "页面不存在", "text/plain; charset=utf-8");
-    res.writeHead(200, { "content-type": mime[extname(file).toLowerCase()] || "application/octet-stream", "cache-control": relative === "index.html" ? "no-cache" : "public, max-age=86400", "x-content-type-options": "nosniff" });
+    // 文件名目前没有内容哈希。HTML 与 JS 必须一起更新，否则浏览器会运行“新页面 + 旧脚本”。
+    const cacheControl = /^(?:index\.html|js\/.*\.js)$/i.test(relative) ? "no-cache" : "public, max-age=3600";
+    res.writeHead(200, { "content-type": mime[extname(file).toLowerCase()] || "application/octet-stream", "cache-control": cacheControl, "x-content-type-options": "nosniff" });
     createReadStream(file).pipe(res);
   } catch (error) {
     console.error(error);
