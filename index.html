@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MineMixer · 我的世界材质包编辑器</title>
 <style>
 :root{
@@ -168,8 +168,78 @@ select.hbtn{appearance:none}
 .cloud-card .favorite.on{color:#ffd166;border-color:#8c6a30}
 .cloud-card .desc{font-size:11.5px;color:var(--txt3);line-height:1.4;min-height:32px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cloud-card .icon{width:40px;height:40px;object-fit:cover;image-rendering:pixelated;border-radius:8px;float:right;margin-left:8px}
-@media(max-width:900px){body{height:auto;min-height:100vh;overflow:auto}#viewWork.show{min-height:100vh}.topbar{flex-wrap:wrap}.topbar>span{display:none}#wsSearch{order:5;max-width:none;width:100%}.workmain{grid-template-columns:150px minmax(0,1fr);height:auto;min-height:0}#wsRight{grid-column:1/-1;min-height:320px;max-height:55vh}#rail,#stage{max-height:58vh}}
-@media(max-width:600px){#viewHome{padding:16px 12px 40px}.hero{padding:24px 12px}.hero h1{font-size:25px!important}.homebtns{gap:8px}.homebtns .hbtn{flex:1 1 45%;font-size:12px;padding:10px 8px}.dropzone{padding:20px 12px}.cloud-head{align-items:stretch}.cloud-head .hint{width:100%}.cloud-controls{margin-left:0;width:100%}.cloud-controls input{flex:1;min-width:130px}.workmain{display:flex;flex-direction:column;padding:8px}#rail{display:flex;gap:5px;overflow-x:auto;max-height:none;flex:none}#rail .rcat{white-space:nowrap}#center{min-height:50vh}#stage{max-height:none;min-height:45vh}.topbar{padding:8px}#verSel2{max-width:145px}.dmain{flex-direction:column}.dimg{width:100%;height:190px}}
+@media(max-width:900px){
+  body{height:auto;min-height:100vh;min-height:100dvh;overflow:auto}
+  #viewWork.show{min-height:100vh;min-height:100dvh}
+  .topbar{flex-wrap:wrap}.topbar>span{display:none}
+  #wsSearch{order:5;max-width:none;width:100%}
+  .workmain{grid-template-columns:150px minmax(0,1fr);height:auto;min-height:0}
+  #wsRight{grid-column:1/-1;min-height:320px;max-height:55vh}
+  #rail,#stage{max-height:58vh}
+}
+@media(max-width:600px){
+  body{font-size:14px;-webkit-text-size-adjust:100%;background-position:center top}
+  .hbtn{min-height:44px;padding:10px 13px;touch-action:manipulation}
+  #viewHome{padding:calc(12px + env(safe-area-inset-top)) 12px calc(34px + env(safe-area-inset-bottom));align-items:stretch}
+  .hero,.homebtns,.editor-steps,.dropzone,#homePacks,#onlineLog,.advanced-tools{width:100%}
+  .hero{padding:22px 14px;margin-bottom:18px;border-radius:17px}
+  .hero h1{font-size:25px!important;line-height:1.2}
+  #viewHome .sub{font-size:13px;margin-top:8px}
+  .editor-steps{display:grid;grid-template-columns:1fr;margin:0 0 18px;gap:7px}
+  .editor-steps span{text-align:left;padding:9px 12px}
+  .homebtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+  .homebtns .hbtn{width:100%;font-size:12px;padding:10px 7px}
+  .homebtns .primary{grid-column:1/-1}
+  .dropzone{padding:18px 12px;margin-bottom:22px;font-size:12px}
+  #homePacks,#cloudList{grid-template-columns:1fr!important;gap:10px!important}
+  .hpack{padding:13px}.hpack .ops{flex-wrap:wrap}.hpack .ops .hbtn{min-height:40px;flex:1}
+  .cloud-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .cloud-tabs .hbtn{padding:8px 4px;font-size:11.5px}
+  .cloud-head{align-items:stretch}.cloud-head .hint{width:100%}
+  .cloud-controls{margin-left:0;width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .cloud-controls input{grid-column:1/-1;width:100%;min-width:0}
+  .cloud-controls select{width:100%;min-width:0;min-height:44px}
+  .cloud-card{min-height:0}.advanced-tools summary{padding:10px 0}
+
+  .topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px;padding:calc(7px + env(safe-area-inset-top)) 8px 8px;background:rgba(10,14,21,.97);backdrop-filter:blur(12px)}
+  .topbar .title{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #btnGoHome{padding-inline:10px}
+  #wsSearch{grid-column:1/-1;order:initial;width:100%;max-width:none;min-height:44px;font-size:16px}
+  #verSel2{max-width:none;width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+  #btnPack2{width:100%;padding-inline:8px}
+  .workmain{display:flex;flex-direction:column;gap:8px;padding:8px 8px calc(12px + env(safe-area-inset-bottom))}
+  #rail{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;max-height:none;flex:none;padding:6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  #rail .rcat{min-height:42px;flex:0 0 auto;white-space:nowrap;margin:0;padding:8px 11px;scroll-snap-align:start}
+  #rail .rcat .n{margin-left:8px}
+  #center{min-height:0}
+  #crumb{overflow-x:auto;white-space:nowrap;padding:5px 3px 7px}
+  #stage{max-height:none;min-height:52vh;padding:10px;overflow:visible}
+  .setwall{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .setcard{width:100%;min-width:0;padding:10px;cursor:pointer}
+  .setthumbs{overflow:hidden}.setthumbs .gt{width:34px;height:34px;flex:0 0 34px}
+  .entrygrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .ecell{width:100%;min-width:0;padding:6px 4px;cursor:pointer}
+  .eth{height:62px}
+  #wsRight{min-height:360px;max-height:65vh}
+  #wsRight .phead{padding:12px 13px}#wbList{padding:7px}.wbrow{min-height:44px}
+  .wbfoot{position:sticky;bottom:0;background:var(--card);padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .overlay{padding:8px;align-items:flex-end}
+  #detailBody{width:100%;max-height:92vh;max-height:92dvh;padding:15px;border-radius:17px 17px 8px 8px}
+  .dmain{flex-direction:column;gap:12px}.dimg{width:100%;height:190px}
+  .ablist{display:grid;grid-template-columns:1fr 1fr;gap:8px}.abcard{width:100%}
+  #toast{bottom:calc(14px + env(safe-area-inset-bottom));width:calc(100% - 24px);max-width:none;text-align:center}
+  #dbg{display:none}
+}
+@media(max-width:380px){
+  .setwall{grid-template-columns:1fr}
+  .entrygrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cloud-tabs .hbtn{font-size:10.5px}
+}
+@media(hover:none){
+  .setcard:hover,.cloud-card:hover{transform:none}
+  .hbtn:hover{border-color:var(--line2);color:var(--txt2)}
+  .hbtn.primary:hover{color:#fff}
+}
 </style>
 </head>
 <body>
