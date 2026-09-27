@@ -1,0 +1,15 @@
+[Unit]
+Description=MineMixer CN
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/minemixer
+ExecStart=/usr/bin/node /opt/minemixer/server.mjs
+Environment=PORT=3000
+Restart=always
+RestartSec=3
+User=deploy
+
+[Install]
+WantedBy=multi-user.target

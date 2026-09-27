@@ -1,4 +1,57 @@
-# 网站版 1.0 · 发布指南
+# MineMixer · 国内服务器与自动部署指南
+
+## 推荐架构
+
+`main` 分支每次收到 push 后，`.github/workflows/deploy-cn.yml` 会通过 SSH 把代码同步到国内服务器的 `/opt/minemixer`，重启 systemd 服务并自动检查首页。访客只访问你的国内域名；Modrinth 搜索、图标和 ZIP 下载由 `server.mjs` 同源转发。
+
+### GitHub 仓库 Secrets
+
+在仓库 `Settings → Secrets and variables → Actions` 添加：
+
+- `SERVER_HOST`：国内服务器公网 IP
+- `SERVER_USER`：建议使用 `deploy`
+- `SSH_PRIVATE_KEY`：仅供部署使用的 Ed25519 私钥全文
+
+### 首次配置服务器
+
+```bash
+sudo apt update
+sudo apt install -y nodejs nginx rsync curl
+sudo adduser deploy
+sudo mkdir -p /opt/minemixer
+sudo chown -R deploy:deploy /opt/minemixer
+```
+
+把部署公钥加入 `/home/deploy/.ssh/authorized_keys`，首次把仓库内容上传到 `/opt/minemixer`，然后安装常驻服务：
+
+```bash
+sudo cp /opt/minemixer/deploy/minemixer.service /etc/systemd/system/minemixer.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now minemixer
+curl --fail http://127.0.0.1:3000/
+```
+
+允许部署用户只重启这一项服务：
+
+```bash
+sudo visudo -f /etc/sudoers.d/minemixer-deploy
+```
+
+写入：
+
+```text
+deploy ALL=(root) NOPASSWD: /bin/systemctl restart minemixer
+```
+
+将 `deploy/nginx.conf` 中的域名换成真实且已备案域名，再安装配置并申请 HTTPS 证书。完成一次手动部署后，以后只需向 `main` 分支推送，网站便会自动更新。
+
+## 兼容性说明
+
+- 国内正式站必须通过 `node server.mjs` 运行，不能只把文件放到纯静态托管；同源代理接口是在线搜索和导入在国内可用的关键。
+- 直接双击 `index.html` 仍可使用本地 ZIP 导入、混搭和导出，但在线搜索需要服务器。
+- GitHub Pages 可以继续展示静态界面，但没有 `/api` 后端，因此不再作为完整功能的推荐部署方式。
+
+## 旧版静态部署说明
 
 MineMixer 是**纯静态应用**——不需要后端服务器、不需要数据库服务,任何静态托管都能跑。
 

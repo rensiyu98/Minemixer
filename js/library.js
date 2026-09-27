@@ -59,13 +59,13 @@ async function importCloudPack(c) {
   let license = c.lic;
   let author = c.url ? 'Cloud:' + c.slug : 'Modrinth:' + c.slug;
   if (!url) {
-    const projectResponse = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(c.slug)}`);
+    const projectResponse = await fetch(`/api/modrinth/project/${encodeURIComponent(c.slug)}`);
     if (!projectResponse.ok) throw new Error('无法读取项目资料');
     const project = await projectResponse.json();
     if (project.project_type !== 'resourcepack') throw new Error('项目已不再是资源包');
     license = project.license && project.license.id;
     if (!license || license !== c.lic) throw new Error('项目许可证与清单不一致，请检查后再导入');
-    const versionResponse = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(c.slug)}/version`);
+    const versionResponse = await fetch(`/api/modrinth/project/${encodeURIComponent(c.slug)}/version`);
     if (!versionResponse.ok) throw new Error('无法读取项目版本');
     const versions = await versionResponse.json();
     const file = versions.flatMap(v => v.files || []).find(f => f.primary && /\.zip(?:$|\?)/i.test(f.url))
@@ -73,7 +73,8 @@ async function importCloudPack(c) {
     if (!file) throw new Error('没有可用的资源包 zip');
     url = file.url;
   }
-  const response = await fetch(url);
+  const remoteUrl = new URL(url, location.href);
+  const response = await fetch(remoteUrl.origin === location.origin ? remoteUrl.href : `/api/download?url=${encodeURIComponent(remoteUrl.href)}`);
   if (!response.ok) throw new Error('下载失败 (' + response.status + ')');
   const buf = await response.arrayBuffer();
   const pk = await importZipBuffer(buf, { name: c.name, license, source: c.url ? 'cloud' : 'modrinth', author });
