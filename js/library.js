@@ -92,17 +92,15 @@ async function importCloudPack(c) {
   let license = c.lic;
   let author = c.url ? 'Cloud:' + c.slug : 'Modrinth:' + c.slug;
   if (!url) {
-    let projectResponse = await fetch(`/api/modrinth/project/${encodeURIComponent(c.slug)}`);
-    if (projectResponse.status === 404) projectResponse = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(c.slug)}`);
-    if (!projectResponse.ok) throw new Error('无法读取项目资料');
-    const project = await projectResponse.json();
+    const project = typeof modrinthJson === 'function'
+      ? await modrinthJson(`project/${encodeURIComponent(c.slug)}`)
+      : await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(c.slug)}`).then(r => r.json());
     if (project.project_type !== 'resourcepack') throw new Error('项目已不再是资源包');
     license = project.license && project.license.id;
     if (!license || license !== c.lic) throw new Error('项目许可证与清单不一致，请检查后再导入');
-    let versionResponse = await fetch(`/api/modrinth/project/${encodeURIComponent(c.slug)}/version`);
-    if (versionResponse.status === 404) versionResponse = await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(c.slug)}/version`);
-    if (!versionResponse.ok) throw new Error('无法读取项目版本');
-    const versions = await versionResponse.json();
+    const versions = typeof modrinthJson === 'function'
+      ? await modrinthJson(`project/${encodeURIComponent(c.slug)}/version`)
+      : await fetch(`https://api.modrinth.com/v2/project/${encodeURIComponent(c.slug)}/version`).then(r => r.json());
     const file = versions.flatMap(v => v.files || []).find(f => f.primary && /\.zip(?:$|\?)/i.test(f.url))
       || versions.flatMap(v => v.files || []).find(f => /\.zip(?:$|\?)/i.test(f.url));
     if (!file) throw new Error('没有可用的资源包 zip');

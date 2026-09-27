@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MineMixer · 我的世界材质包编辑器</title>
+<script>
+// Cloudflare Pages 仅作为代码镜像；正式站提供在线搜索/下载代理和国内线路。
+if (location.hostname === 'minemixer.pages.dev') {
+  location.replace('https://minemixer.top' + location.pathname + location.search + location.hash);
+}
+</script>
 <style>
 :root{
   --bg:#0a0e15; --card:#121a28; --card2:#0f1622; --line:#1f2c42; --line2:#2a3a58;
@@ -351,7 +357,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
 <script src="js/checker.js?v=7"></script>
 <script src="js/cloud-library.js?v=7"></script>
 <script src="js/store.js?v=7"></script>
-<script src="js/library.js?v=7"></script>
+<script src="js/library.js?v=8"></script>
 <script src="js/workbench.js?v=7"></script>
 <script src="js/project.js?v=7"></script>
 <script>
@@ -381,6 +387,15 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
   $('#btnOnline').onclick = runOnline;
   // ---- 精选 + Modrinth 在线发现 + 本机收藏 ----
   const OPEN_LICENSES = ['MIT','CC0-1.0','CC-BY-3.0','CC-BY-4.0','CC-BY-SA-3.0','CC-BY-SA-4.0','CC-BY-NC-4.0','CC-BY-NC-SA-4.0','Apache-2.0','GPL-3.0-only','GPL-3.0-or-later','LGPL-3.0-only','LGPL-3.0-or-later','MPL-2.0','BSD-2-Clause','BSD-3-Clause','Unlicense'];
+  async function modrinthJson(path) {
+    let response = await fetch('/api/modrinth/' + path);
+    const type = response.headers.get('content-type') || '';
+    if (response.status === 404 || !type.includes('application/json')) response = await fetch('https://api.modrinth.com/v2/' + path);
+    if (!response.ok) throw new Error('在线服务请求失败 (' + response.status + ')');
+    const finalType = response.headers.get('content-type') || '';
+    if (!finalType.includes('application/json')) throw new Error('当前地址不提供在线服务，请使用 https://minemixer.top');
+    return response.json();
+  }
   const CLOUD = { tab: 'featured', shown: 24, q: '', category: '', sort: 'default', hits: [], total: 0, offset: 0, loading: false, request: 0 };
   const FAVORITES_KEY = 'mm2_favorites';
   let favorites;
@@ -410,10 +425,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
     const facets = JSON.stringify([['project_type:resourcepack'], visualCategories.map(cat => 'categories:' + cat), ['categories!=modded'], OPEN_LICENSES.map(lic => 'license:' + lic)]);
     const params = new URLSearchParams({ query: CLOUD.q, facets, index: CLOUD.sort === 'new' ? 'newest' : CLOUD.sort === 'name' ? 'relevance' : 'downloads', offset: String(CLOUD.offset), limit: '24' });
     try {
-      let response = await fetch('/api/modrinth/search?' + params);
-      if (response.status === 404) response = await fetch('https://api.modrinth.com/v2/search?' + params);
-      if (!response.ok) throw new Error('在线搜索失败 (' + response.status + ')');
-      const result = await response.json();
+      const result = await modrinthJson('search?' + params);
       if (seq !== CLOUD.request) return;
       CLOUD.offset += (result.hits || []).length;
       const seen = new Set(CLOUD.hits.map(c => c.slug));
