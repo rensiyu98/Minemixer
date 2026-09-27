@@ -1,5 +1,7 @@
 # MineMixer · 国内服务器与自动部署指南
 
+正式地址：<https://minemixer.top>（`www.minemixer.top` 同样可访问）
+
 ## 推荐架构
 
 `main` 分支每次收到 push 后，`.github/workflows/deploy-cn.yml` 会通过 SSH 把代码同步到国内服务器的 `/opt/minemixer`，重启 systemd 服务并自动检查首页。访客只访问你的国内域名；Modrinth 搜索、图标和 ZIP 下载由 `server.mjs` 同源转发。
@@ -43,7 +45,7 @@ sudo visudo -f /etc/sudoers.d/minemixer-deploy
 deploy ALL=(root) NOPASSWD: /bin/systemctl restart minemixer
 ```
 
-将 `deploy/nginx.conf` 中的域名换成真实且已备案域名，再安装配置并申请 HTTPS 证书。完成一次手动部署后，以后只需向 `main` 分支推送，网站便会自动更新。
+安装 `deploy/nginx.conf` 后申请 HTTPS 证书。当前服务器位于中国香港，域名为 `minemixer.top`；完成一次手动部署后，以后只需向 `main` 分支推送，网站便会自动更新。
 
 ## 兼容性说明
 
