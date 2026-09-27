@@ -4,12 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MineMixer · 我的世界材质包编辑器</title>
-<script>
-// Cloudflare Pages 仅作为代码镜像；正式站提供在线搜索/下载代理和国内线路。
-if (location.hostname === 'minemixer.pages.dev') {
-  location.replace('https://minemixer.top' + location.pathname + location.search + location.hash);
-}
-</script>
 <style>
 :root{
   --bg:#0a0e15; --card:#121a28; --card2:#0f1622; --line:#1f2c42; --line2:#2a3a58;
@@ -253,6 +247,8 @@ select.hbtn{appearance:none}
 </head>
 <body>
 
+<div id="mirrorNotice" style="display:none;padding:9px 14px;background:#30270f;border-bottom:1px solid #6e5a24;color:#ffdc7a;text-align:center;font-size:12px;flex:none">你正在使用旧静态镜像；此处保存的导入包不会自动出现在正式站。可继续处理当前工程，或在 <a href="https://minemixer.top" style="color:#fff">minemixer.top</a> 重新导入以获得国内线路。</div>
+
 <!-- ================= 主界面 ================= -->
 <div id="viewHome">
   <div class="hero"><div class="eyebrow">Minecraft Resource Pack Studio</div><div style="font-size:40px">⛏️</div>
@@ -363,6 +359,7 @@ function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.heig
 <script>
 'use strict';
 (async function boot(){
+  if (location.hostname === 'minemixer.pages.dev') $('#mirrorNotice').style.display = '';
   await DB.open();
   // ---- 视图切换 ----
   const goHome = () => { $('#viewWork').classList.remove('show'); $('#viewHome').style.display=''; };
